@@ -1,0 +1,35 @@
+## Questions to be answered by the application
+
+### regarding location
+- I am Looking for datasets over Dresden.
+- I am Looking for global datasets. 
+- I am Looking for datasets over urban Areas in Germany.
+
+### regarding time
+- I am Looking for datasets from 01.01.2018 - 31.12.2018
+- I am Looking for datasets from summermonths 2018-2025
+- I am Looking for datasets from heat waves -> check with weather data
+- I am Looking for datasets with a high revisit time. -> know and check for instrument
+
+### regarding Topic
+- I am Looking for urban related datasets
+
+- I am Looking for datasets to analyse vegetation water content.
+- I am Looking for LST datasets 
+-> know which wavelengths -> know which instrument has bands -> check for this Instrument
+
+-> get list of all keywords in catalog to include in query?
+
+### regarding Attributes
+- I am Looking for datasets with cloudcover <30 %
+- I am Looking for datasets with Vegetation cover >10 %
+-> not queryable for every collection
+- I am Looking for datasets with a high spatial Resolution -> determine what is high?
+
+### regarding Acquisition (Instrument/Sensor/Platform)
+- I am Looking for datasets acquired by Sentinel 2
+- I am Looking for RADAR datasets
+
+
+eine Collection aussuchen
+mitte 
