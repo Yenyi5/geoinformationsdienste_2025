@@ -94,9 +94,13 @@ Return only raw JSON — no markdown, no code formatting.
     llm_output = call_llm(prompt)
     print("LLM Output:", llm_output)
 
-    #Clean the output from possible formatting 
-    cleaned_output = llm_output.strip().strip("```").strip()
-    print(cleaned_output)
+    #Clean the output from possible formatting to only include content within the most outer curly braces
+    start = llm_output.find('{')
+    end = llm_output.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        cleaned_output = llm_output[start:end+1]
+    else:
+        cleaned_output = llm_output.strip()
     
     #Step 3: parse the string as JSON
     try:
