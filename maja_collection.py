@@ -1,5 +1,6 @@
 import requests
 import json
+import folium
 
 #Define API key, endpoint, llm, URL for STAC data collection
 API_Key = "7f966d739f12900214b52741e3f80ff2" 
@@ -47,6 +48,35 @@ def search_stac(collection_id, bbox=None, datetime_range=None):
     
     return items
 
+# Create leaflet view of bounding box
+def map_bbox(bbox=None):
+    ''' Draws the generated bbox into a map interface.'''
+    if bbox is None:
+        print("No bbox provided.")
+        return None
+    # bbox: [min_lon, min_lat, max_lon, max_lat]
+    min_lon, min_lat, max_lon, max_lat = bbox
+    # Center of bbox
+    center_lat = (min_lat + max_lat) / 2
+    center_lon = (min_lon + max_lon) / 2
+    # Create map centered on bbox
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=10)
+    # Draw rectangle for bbox
+    folium.Rectangle(
+        bounds=[
+            [min_lat, min_lon],
+            [max_lat, max_lon]
+        ],
+        color='cornflowerblue',
+        fill=True,
+        fill_opacity=0.2
+    ).add_to(m)
+
+    # Display map in notebook or save to HTML
+    m.save("bbox_map.html")
+    print("Map saved to bbox_map.html")
+    return m
+
 
 def main():
     #Step 1: Natural Language Query form user 
@@ -66,6 +96,7 @@ Return only raw JSON — no markdown, no code formatting.
 
     #Clean the output from possible formatting 
     cleaned_output = llm_output.strip().strip("```").strip()
+    print(cleaned_output)
     
     #Step 3: parse the string as JSON
     try:
@@ -83,6 +114,9 @@ Return only raw JSON — no markdown, no code formatting.
         bbox=search_params.get("bbox"),
         datetime_range=search_params.get("datetime_range")
     )
+
+    # Step 5: Display bbox in leaflet view
+    map_bbox(bbox=search_params.get("bbox"))
 
 if __name__ == "__main__":
     main()
