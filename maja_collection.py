@@ -74,7 +74,7 @@ def map_bbox(bbox=None):
 
     # Display map in notebook or save to HTML
     m.save("bbox_map.html")
-    print("Map saved to bbox_map.html")
+    print("Map saved to bbox_map.html. To view in VS Code Live tab, install the extension Live Preview, open map_bbox.html and run ctrl+shift+p Live Preview: Show Preview (Internal Server)")
     return m
 
 
