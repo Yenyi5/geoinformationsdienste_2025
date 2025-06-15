@@ -18,8 +18,25 @@ BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
 # Predefine structure of desired LLM output
 class StacSearchParams(BaseModel):
-    bbox: list = Field(description="Give me the areas bounding box in the format [min_lon, min_lat, max_lon, max_lat]")
+    bbox: list = Field(description="Give me the areas bounding box in the format [min_lon, min_lat, max_lon, max_lat] where the coordinates are integers")
     datetime_range: str = Field(description="Give me the time span in the format YYYY-MM-DD/YYYY-MM-DD")
+
+json_schema = {
+    "title": "api_request",
+    "description": "Request for STAC API.",
+    "type": "object",
+    "properties": {
+        "bbox": {
+            "type": "list",
+            "description": "The area's bounding box in the format [min_lon, min_lat, max_lon, max_lat] where the coordinates are integers.",
+        },
+        "datetime_range": {
+            "type": "string",
+            "description": "The requested time span in the format YYYY-MM-DD/YYYY-MM-DD",
+        },
+    },
+    "required": ["bbox", "datetime_range"],
+}
 
 # Calls the LLM with a prompt and return a raw text output 
 def call_llm(query):
@@ -30,7 +47,11 @@ def call_llm(query):
         #temperature=0.4,
         max_tokens=1024
     )
-    parser = PydanticOutputParser(pydantic_object=StacSearchParams)
+
+    structured_llm = llm.with_structured_output(json_schema)
+
+    '''
+    parser = PydanticOutputParser(pydantic_object=StacSearchParams.json())
     
     prompt = PromptTemplate(
         template=(
@@ -44,8 +65,8 @@ def call_llm(query):
     )
 
     chain = prompt | llm | parser
-
-    response = chain.invoke({"query": query})
+    '''
+    response = structured_llm.invoke(query)
     return response.content if hasattr(response, 'content') else str(response)
 
 #Access our STAC data collection
@@ -109,6 +130,7 @@ def main():
     #Call llm and print response 
     llm_output = call_llm(user_question)
     print("LLM Output:", llm_output)
+    #print("LLM Output json:", llm_output.json())
 
     #Clean the output from possible formatting to only include content within the most outer curly braces
     start = llm_output.find('{')
