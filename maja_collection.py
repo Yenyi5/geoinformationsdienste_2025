@@ -18,25 +18,8 @@ BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
 # Predefine structure of desired LLM output
 class StacSearchParams(BaseModel):
-    bbox: list = Field(description="Give me the areas bounding box in the format [min_lon, min_lat, max_lon, max_lat] where the coordinates are integers")
+    bbox: list = Field(description="Give me the areas bounding box in the format [min_lon, min_lat, max_lon, max_lat] with the coordiantes as integers")
     datetime_range: str = Field(description="Give me the time span in the format YYYY-MM-DD/YYYY-MM-DD")
-
-json_schema = {
-    "title": "api_request",
-    "description": "Request for STAC API.",
-    "type": "object",
-    "properties": {
-        "bbox": {
-            "type": "list",
-            "description": "The area's bounding box in the format [min_lon, min_lat, max_lon, max_lat] where the coordinates are integers.",
-        },
-        "datetime_range": {
-            "type": "string",
-            "description": "The requested time span in the format YYYY-MM-DD/YYYY-MM-DD",
-        },
-    },
-    "required": ["bbox", "datetime_range"],
-}
 
 # Calls the LLM with a prompt and return a raw text output 
 def call_llm(query):
@@ -47,27 +30,21 @@ def call_llm(query):
         #temperature=0.4,
         max_tokens=1024
     )
-
-    structured_llm = llm.with_structured_output(json_schema)
-
-    '''
-    parser = PydanticOutputParser(pydantic_object=StacSearchParams.json())
+    parser = PydanticOutputParser(pydantic_object=StacSearchParams)
     
     prompt = PromptTemplate(
         template=(
             "You are a system that translates user questions in natural language into STAC API parameters. "
             "Given the question: {query}, extract the following as a JSON: {format_instructions} "
-            "Return only a valid JSON object, with double quotes for all keys and string values. "
-            "Do not use Python variable assignments or single quotes. Do not include any text before or after the JSON."
         ),
         input_variables=["query"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
 
     chain = prompt | llm | parser
-    '''
-    response = structured_llm.invoke(query)
-    return response.content if hasattr(response, 'content') else str(response)
+
+    response = chain.invoke({"query": query})
+    return response.model_dump_json()
 
 #Access our STAC data collection
 def search_stac(collection_id, bbox=None, datetime_range=None):
@@ -119,7 +96,7 @@ def map_bbox(bbox=None):
 
     # Display map in notebook or save to HTML
     m.save("bbox_map.html")
-    print("Map saved to bbox_map.html. To view in VS Code Live tab, install the extension Live Preview, open map_bbox.html and run ctrl+shift+p Live Preview: Show Preview (Internal Server)")
+    print("Map saved to bbox_map.html. To view in live tab in VS Code, install the extension Live Preview, open map_bbox.html, press ctrl+shift+p and run Live Preview: Show Preview (Internal Browser)")
     return m
 
 
@@ -130,17 +107,8 @@ def main():
     #Call llm and print response 
     llm_output = call_llm(user_question)
     print("LLM Output:", llm_output)
-    #print("LLM Output json:", llm_output.json())
-
-    #Clean the output from possible formatting to only include content within the most outer curly braces
-    start = llm_output.find('{')
-    end = llm_output.rfind('}')
-    if start != -1 and end != -1 and end > start:
-        cleaned_output = llm_output[start:end+1]
-    else:
-        cleaned_output = llm_output.strip()
     
-    #Step 3: parse the string as JSON
+    #Step 2: parse the string as JSON
     try:
         search_params = json.loads(llm_output)
     except json.JSONDecodeError:
@@ -150,14 +118,14 @@ def main():
     #Use one specific collection as an example 
     collection_id = "S2_L2A_MAJA"
 
-    #Step 4:Perform the STAC search within the given collection
+    #Step 3:Perform the STAC search within the given collection
     search_stac(
         collection_id=collection_id,
         bbox=search_params.get("bbox"),
         datetime_range=search_params.get("datetime_range")
     )
 
-    # Step 5: Display bbox in leaflet view
+    # Step 4: Display bbox in leaflet view
     map_bbox(bbox=search_params.get("bbox"))
 
 if __name__ == "__main__":

@@ -1,0 +1,40 @@
+Traceback (most recent call last):
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\output_parsers\pydantic.py", line 30, in _parse_obj
+    return self.pydantic_object.model_validate(obj)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\pydantic\main.py", line 627, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for StacSearchParams
+  Input should be a valid dictionary or instance of StacSearchParams [type=model_type, input_value=[13.3, 52.4, 13.5, 52.6], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.10/v/model_type
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "<stdin>", line 5, in main
+  File "<stdin>", line 19, in call_llm
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\runnables\base.py", line 3034, in invoke
+    input = context.run(step.invoke, input, config)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\output_parsers\base.py", line 196, in invoke
+    return self._call_with_config(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\runnables\base.py", line 1930, in _call_with_config
+    context.run(
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\runnables\config.py", line 428, in call_func_with_variable_args
+    return func(input, **kwargs)  # type: ignore[call-arg]
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\output_parsers\base.py", line 197, in <lambda>
+    lambda inner_input: self.parse_result(
+                        ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\output_parsers\pydantic.py", line 69, in parse_result
+    return self._parse_obj(json_object)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\lkluw\miniconda3\Lib\site-packages\langchain_core\output_parsers\pydantic.py", line 37, in _parse_obj
+    raise self._parser_exception(e, obj) from e
+langchain_core.exceptions.OutputParserException: Failed to parse StacSearchParams from completion [13.3, 52.4, 13.5, 52.6]. Got: 1 validation error for StacSearchParams
+  Input should be a valid dictionary or instance of StacSearchParams [type=model_type, input_value=[13.3, 52.4, 13.5, 52.6], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.10/v/model_type
+For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE
