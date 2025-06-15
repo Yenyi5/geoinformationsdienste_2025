@@ -1,28 +1,28 @@
 import requests
 import json
 import folium
+from langchain_openai.chat_models.base import BaseChatOpenAI
+import os
 
 #Define API key, endpoint, llm, URL for STAC data collection
 API_Key = "7f966d739f12900214b52741e3f80ff2" 
 API_Endpoint = "https://chat-ai.academiccloud.de/v1"
-Model = "meta-llama-3.1-8b-instruct"
+Model = "meta-llama-3.1-8b-instruct"  # "deepseek-r1"
 BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
+
+
 
 #Calls the LLM with a prompt and return a raw text output 
 def call_llm(prompt):
-    headers = {
-        "Authorization": f"Bearer {API_Key}",
-        "Content-Type": "application/json",  #sending in Json
-    }
-    payload = {
-        "model": Model,
-        "messages": [{"role": "user", "content": prompt}],
-    }
-    #Makes request to the LLM API
-    response = requests.post(API_Endpoint + "/chat/completions", headers=headers, json=payload)
-    response.raise_for_status() 
-    return response.json()["choices"][0]["message"]["content"] 
-
+    os.environ["OPENAI_API_KEY"] = API_Key
+    os.environ["OPENAI_API_BASE"] = API_Endpoint
+    llm = BaseChatOpenAI(
+        model=Model,
+        #temperature=0.4,
+        max_tokens=1024
+    )
+    response = llm.invoke(prompt)
+    return response.content if hasattr(response, 'content') else str(response)
 
 #Access our STAC data collection
 def search_stac(collection_id, bbox=None, datetime_range=None):
