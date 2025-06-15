@@ -4,16 +4,25 @@ import folium
 from langchain_openai.chat_models.base import BaseChatOpenAI
 import os
 
+from typing import List
+from langchain.output_parsers import PydanticOutputParser
+from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel, Field
+#from langchain_core.pydantic_v1 import BaseModel, Field, validator
+
 #Define API key, endpoint, llm, URL for STAC data collection
 API_Key = "7f966d739f12900214b52741e3f80ff2" 
 API_Endpoint = "https://chat-ai.academiccloud.de/v1"
 Model = "meta-llama-3.1-8b-instruct"  # "deepseek-r1"
 BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
+# Predefine structure of desired LLM output
+class StacSearchParams(BaseModel):
+    bbox: list = Field(description="Give me the areas bounding box in the format [min_lon, min_lat, max_lon, max_lat]")
+    datetime_range: str = Field(description="Give me the time span in the format YYYY-MM-DD/YYYY-MM-DD")
 
-
-#Calls the LLM with a prompt and return a raw text output 
-def call_llm(prompt):
+# Calls the LLM with a prompt and return a raw text output 
+def call_llm(query):
     os.environ["OPENAI_API_KEY"] = API_Key
     os.environ["OPENAI_API_BASE"] = API_Endpoint
     llm = BaseChatOpenAI(
@@ -21,7 +30,22 @@ def call_llm(prompt):
         #temperature=0.4,
         max_tokens=1024
     )
-    response = llm.invoke(prompt)
+    parser = PydanticOutputParser(pydantic_object=StacSearchParams)
+    
+    prompt = PromptTemplate(
+        template=(
+            "You are a system that translates user questions in natural language into STAC API parameters. "
+            "Given the question: {query}, extract the following as a JSON: {format_instructions} "
+            "Return only a valid JSON object, with double quotes for all keys and string values. "
+            "Do not use Python variable assignments or single quotes. Do not include any text before or after the JSON."
+        ),
+        input_variables=["query"],
+        partial_variables={"format_instructions": parser.get_format_instructions()},
+    )
+
+    chain = prompt | llm | parser
+
+    response = chain.invoke({"query": query})
     return response.content if hasattr(response, 'content') else str(response)
 
 #Access our STAC data collection
@@ -82,16 +106,8 @@ def main():
     #Step 1: Natural Language Query form user 
     user_question = "Find Sentinel-2 MAJA data over Berlin in February 2024"
 
-    #Step 2: Prompt the LLM to extract bbox and date range only 
-    prompt = f"""
-You are a system that translates user questions in natural language into STAC API parameters.
-Given the question: '{user_question}', extract the following as a JSON:
-- "bbox": [min_lon, min_lat, max_lon, max_lat]
-- "datetime_range": "YYYY-MM-DD/YYYY-MM-DD"
-Return only raw JSON — no markdown, no code formatting.
-"""
     #Call llm and print response 
-    llm_output = call_llm(prompt)
+    llm_output = call_llm(user_question)
     print("LLM Output:", llm_output)
 
     #Clean the output from possible formatting to only include content within the most outer curly braces
@@ -104,7 +120,7 @@ Return only raw JSON — no markdown, no code formatting.
     
     #Step 3: parse the string as JSON
     try:
-        search_params = json.loads(cleaned_output)
+        search_params = json.loads(llm_output)
     except json.JSONDecodeError:
         print("Failed to parse LLM output.")
         return
