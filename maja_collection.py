@@ -8,7 +8,6 @@ from typing import List
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
-#from langchain_core.pydantic_v1 import BaseModel, Field, validator
 
 #Define API key, endpoint, llm, URL for STAC data collection
 API_Key = "7f966d739f12900214b52741e3f80ff2" 
@@ -18,7 +17,7 @@ BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
 # Predefine structure of desired LLM output
 class StacSearchParams(BaseModel):
-    bbox: list = Field(description="Give me the areas bounding box in the format [min_lon, min_lat, max_lon, max_lat] with the coordiantes as integers")
+    bbox: list = Field(description="Give me the area's bounding box in the format [min_lon, min_lat, max_lon, max_lat] with the coordiantes as integers")
     datetime_range: str = Field(description="Give me the time span in the format YYYY-MM-DD/YYYY-MM-DD")
 
 # Calls the LLM with a prompt and return a raw text output 
