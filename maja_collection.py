@@ -12,13 +12,14 @@ from pydantic import BaseModel, Field
 #Define API key, endpoint, llm, URL for STAC data collection
 API_Key = "7f966d739f12900214b52741e3f80ff2" 
 API_Endpoint = "https://chat-ai.academiccloud.de/v1"
-Model = "meta-llama-3.1-8b-instruct"  # "deepseek-r1"
+#Model =  "deepseek-r1" 
+Model =  "meta-llama-3.1-8b-instruct"
 BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
 # Predefine structure of desired LLM output
 class StacSearchParams(BaseModel):
-    bbox: list = Field(description="Give me the area's bounding box in the format [min_lon, min_lat, max_lon, max_lat] with the coordiantes as integers")
-    datetime_range: str = Field(description="Give me the time span in the format YYYY-MM-DD/YYYY-MM-DD")
+    bbox: list = Field(description="The area's bounding box in the format [min_lon, min_lat, max_lon, max_lat] with the coordiantes as integers")
+    datetime_range: str = Field(description="The time span in the format YYYY-MM-DD/YYYY-MM-DD")
 
 # Calls the LLM with a prompt and return a raw text output 
 def call_llm(query):
@@ -26,15 +27,15 @@ def call_llm(query):
     os.environ["OPENAI_API_BASE"] = API_Endpoint
     llm = BaseChatOpenAI(
         model=Model,
-        #temperature=0.4,
+        temperature=0,
         max_tokens=1024
     )
     parser = PydanticOutputParser(pydantic_object=StacSearchParams)
     
     prompt = PromptTemplate(
         template=(
-            "You are a system that translates user questions in natural language into STAC API parameters. "
-            "Given the question: {query}, extract the following as a JSON: {format_instructions} "
+            "You are a system that translates user questions in natural language into STAC API parameters."
+            "Given the question: {query}, extract the following: {format_instructions} "
         ),
         input_variables=["query"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
@@ -101,7 +102,7 @@ def map_bbox(bbox=None):
 
 def main():
     #Step 1: Natural Language Query form user 
-    user_question = "Find Sentinel-2 MAJA data over Berlin in February 2024"
+    user_question = "Find Sentinel-2 MAJA data over Berlin."
 
     #Call llm and print response 
     llm_output = call_llm(user_question)
