@@ -79,23 +79,25 @@ def generate_searchparams(state: LocationState):
         input_variables=["query"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
-    message = [HumanMessage(content=prompt)]
-    chain = message | llm | parser
+    chain = prompt | llm | parser
     response = chain.invoke({"query": state["query"]})
 
     print(response)
 
     # Update messages for tracking
+    message = [HumanMessage(prompt.format(query=state["query"]))]
     new_message = state.get("messages", []) + [
         {"role": "user", "content": message},
-        {"role": "agent", "content": response.content}
+        {"role": "agent", "content": response}
     ]
 
     # update the state and the message
     return {"location": response.location,  "datetime_range" : response.datetime_range, "messages": new_message }
 
-#def getgeometry(state:LocationState):
-#    return {"bbox": bbox}
+def getgeometry(state:LocationState):
+    location = state["location"]
+    bbox = [13.4,52.3,13.7,52.6] # replace by sending loaction to geocoding and assigning result to bbox
+    return {"bbox": bbox}
 
 def show_on_map(state:LocationState):
     "Show the bounding box on a map"
@@ -121,15 +123,9 @@ def show_on_map(state:LocationState):
             [max_lat, max_lon]
         ],
         color='cornflowerblue',
+        tooltip=state["location"][0],
         fill=True,
         fill_opacity=0.2
-    ).add_to(m)
-
-    folium.Marker(
-        location=[center_lat, center_lon],
-        tooltip=state["location"],
-        popup=state["location"],
-        icon=folium.Icon(color="cornflowerblue"),
     ).add_to(m)
 
     m.save("bbox_map.html")
@@ -142,7 +138,7 @@ def show_on_map(state:LocationState):
 def search_stac(state: LocationState):
     url = f"{BASE_URL}/search" #STAC search endpoint 
     payload = {
-        "collections": state["collectionid"],
+        "collections": [state["collectionid"]],
         "limit": 10
     }
     #Parameters (can be adjusted)
@@ -150,6 +146,8 @@ def search_stac(state: LocationState):
         payload["bbox"] = state["bbox"]
     if state["datetime_range"]:
         payload["datetime"] = state["datetime_range"]
+
+    print(payload)
 
     headers = {"Content-Type": "application/json"}
     #Makes request to the STAC API
@@ -167,10 +165,10 @@ def search_stac(state: LocationState):
 
 def summarise_result(state:LocationState):
     items = state["items"]
-    message = f""" These are the results from a request sent to the Stac API based on this request: {state["query"]}. Summarise and evaluate them. These are the results: {items}"""
+    message = f""" These are the results from a request sent to the Stac API. Summarise and evaluate the contents of the items reagrding the initial request {state["query"]}. These are the results: {items}"""
     # message = [HumanMessage(content=message)] ?
     response = llm.invoke(message)
-    print("Result Summary: ", response)
+    print("Result Summary: ", response.content)
     new_message = state.get("messages", []) + [
         {"role": "user", "content": message},
         {"role": "agent", "content": response.content}
@@ -198,7 +196,14 @@ graph.add_edge("summarise_results", END)
 # Compile the graph
 compiled_graph = graph.compile()
 
-# draw mermaid graph
+# draw architecture graph
+from IPython.display import Image, display
+
+try:
+    display(Image(compiled_graph.get_graph().draw_mermaid_png()))
+except Exception:
+    # This requires some extra dependencies and is optional
+    pass
 
 # Initiate
 print("\nProcessing the user input...")
@@ -210,6 +215,6 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find Sentinel-2 MAJA data over Cologne.",
+    "query": "Find Sentinel-2 MAJA data in February 2024 over Cologne.",
     "collectionid": "S2_L2A_MAJA" 
 })
