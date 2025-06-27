@@ -4,34 +4,76 @@ import folium
 from langchain_openai.chat_models.base import BaseChatOpenAI
 import os
 
-from typing import List
+from typing import TypedDict, List, Dict, Any, Optional
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
+from langgraph.graph import StateGraph, START, END
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
+
+#!pip install -qU langsmith
 
 #Define API key, endpoint, llm, URL for STAC data collection
 API_Key = "7f966d739f12900214b52741e3f80ff2" 
 API_Endpoint = "https://chat-ai.academiccloud.de/v1"
 #Model =  "deepseek-r1" 
-Model =  "meta-llama-3.1-8b-instruct"
+Model =  "llama-3.3-70b-instruct"
 BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
-# Predefine structure of desired LLM output
-class StacSearchParams(BaseModel):
-    bbox: list = Field(description="The area's bounding box in the format [min_lon, min_lat, max_lon, max_lat] with the coordiantes as integers")
-    datetime_range: str = Field(description="The time span in the format YYYY-MM-DD/YYYY-MM-DD")
+os.environ["OPENAI_API_KEY"] = API_Key
+os.environ["OPENAI_API_BASE"] = API_Endpoint
 
-# Calls the LLM with a prompt and return a raw text output 
-def call_llm(query):
-    os.environ["OPENAI_API_KEY"] = API_Key
-    os.environ["OPENAI_API_BASE"] = API_Endpoint
-    llm = BaseChatOpenAI(
-        model=Model,
-        temperature=0,
-        max_tokens=1024
-    )
+# langsmith
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+os.environ["LANGCHAIN_API_KEY"] = "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"
+
+
+class LocationState(TypedDict):
+
+    # geojson errors
+    geojson_errors: Optional[Dict[str, Any]]
+
+    # analysis and decision about the geojson
+    is_valid_geojson: Optional[bool]
+
+    # location
+    location: Optional[str]
+
+    # bbox
+    bbox: Optional[List[int]]
+
+    # datetime range
+    datetime_range : Optional[str]
+
+    # map object of bbox
+    bboxmap: Optional[Any]
+
+    # processing metadata
+    messages: List[Dict[str, Any]]  # Track conversation with LLM for analysis
+
+    # resulting Scene IDs
+    scene_ids: Optional[List[str]]
+
+    # resulting Items
+    items : Optional[Any]
+
+    # output message, after the validation of the geojson
+    output_message: Optional[str]
+
+
+# model
+llm = BaseChatOpenAI(model=Model, temperature=0)
+
+### NODES
+
+def generate_searchparams(state: LocationState, query):
+    ''' Generate search parameters from user input based on structured output'''
+    class StacSearchParams(BaseModel):
+        location: list = Field(description="The geographic location indicated in the search as a geocodable location string to be used for geocoding via Nominatim to find its coordinates")
+        datetime_range: str = Field(description="The time span in the format YYYY-MM-DD/YYYY-MM-DD")
     parser = PydanticOutputParser(pydantic_object=StacSearchParams)
-    
     prompt = PromptTemplate(
         template=(
             "You are a system that translates user questions in natural language into STAC API parameters."
@@ -40,42 +82,34 @@ def call_llm(query):
         input_variables=["query"],
         partial_variables={"format_instructions": parser.get_format_instructions()},
     )
-
-    chain = prompt | llm | parser
-
+    message = [HumanMessage(content=prompt)]
+    chain = message | llm | parser
     response = chain.invoke({"query": query})
-    return response.model_dump_json()
 
-#Access our STAC data collection
-def search_stac(collection_id, bbox=None, datetime_range=None):
-    url = f"{BASE_URL}/search" #STAC search endpoint 
-    payload = {
-        "collections": [collection_id],
-        "limit": 10
-    }
-    #Parameters (can be adjusted)
-    if bbox:
-        payload["bbox"] = bbox
-    if datetime_range:
-        payload["datetime"] = datetime_range
+    print(response)
 
-    headers = {"Content-Type": "application/json"}
-    #Makes request to the STAC API
-    response = requests.post(url, json=payload, headers=headers)
-    response.raise_for_status()
-    items = response.json().get("features", [])
-    
-    for item in items:
-        print(f"ID: {item['id']}, Date: {item['properties']['datetime']}")
-    
-    return items
+    # Update messages for tracking
+    new_message = state.get("messages", []) + [
+        {"role": "user", "content": message},
+        {"role": "agent", "content": response.content}
+    ]
 
-# Create leaflet view of bounding box
-def map_bbox(bbox=None):
-    ''' Draws the generated bbox into a map interface.'''
-    if bbox is None:
-        print("No bbox provided.")
-        return None
+    # update the state and the message
+    return {"location": response.location,  "datetime_range" : response.datetime_range, "messages": new_message }
+
+#def getgeometry():
+#    return {"bbox": bbox}
+
+def show_on_map(state:LocationState):
+    "Show the bounding box on a map"
+
+    print("Creating the map...")
+
+    if state["bbox"]:
+        bbox = state["bbox"]
+    else:
+        "No bbox provided."
+
     # bbox: [min_lon, min_lat, max_lon, max_lat]
     min_lon, min_lat, max_lon, max_lat = bbox
     # Center of bbox
@@ -94,15 +128,48 @@ def map_bbox(bbox=None):
         fill_opacity=0.2
     ).add_to(m)
 
-    # Display map in notebook or save to HTML
+    folium.Marker(
+        location=[center_lat, center_lon],
+        tooltip=state["location"],
+        popup=state["location"],
+        icon=folium.Icon(color="cornflowerblue"),
+    ).add_to(m)
+
     m.save("bbox_map.html")
     print("Map saved to bbox_map.html. To view in live tab in VS Code, install the extension Live Preview, open map_bbox.html, press ctrl+shift+p and run Live Preview: Show Preview (Internal Browser)")
-    return m
+    #display(m)
+    return {"map_bbox":m}
+
+
+#Access our STAC data collection
+def search_stac(state: LocationState, collection_id):
+    url = f"{BASE_URL}/search" #STAC search endpoint 
+    payload = {
+        "collections": [collection_id],
+        "limit": 10
+    }
+    #Parameters (can be adjusted)
+    if state["bbox"]:
+        payload["bbox"] = state["bbox"]
+    if state["datetime_range"]:
+        payload["datetime"] = state["datetime_range"]
+
+    headers = {"Content-Type": "application/json"}
+    #Makes request to the STAC API
+    print("Sending request to STAC API")
+    response = requests.post(url, json=payload, headers=headers)
+    response.raise_for_status()
+    items = response.json().get("features", [])
+    print(f"Found {len(items)} items.")
+    
+    scene_ids = {item['id']:{item['properties']['datetime']} for item in items}
+    
+    return {"scene_ids":scene_ids, "items":items}
 
 
 def main():
     #Step 1: Natural Language Query form user 
-    user_question = "Find Sentinel-2 MAJA data over Berlin."
+    user_question = "Find Sentinel-2 MAJA data over Cologne."
 
     #Call llm and print response 
     llm_output = call_llm(user_question)
