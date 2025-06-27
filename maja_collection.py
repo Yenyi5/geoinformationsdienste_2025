@@ -32,12 +32,6 @@ os.environ["LANGCHAIN_API_KEY"] = "lsv2_pt_1709d9f82ac44375806a95d1bbd56ec9_cf71
 
 class LocationState(TypedDict):
 
-    # geojson errors
-    geojson_errors: Optional[Dict[str, Any]]
-
-    # analysis and decision about the geojson
-    is_valid_geojson: Optional[bool]
-
     # location
     location: Optional[str]
 
@@ -54,13 +48,16 @@ class LocationState(TypedDict):
     messages: List[Dict[str, Any]]  # Track conversation with LLM for analysis
 
     # resulting Scene IDs
-    scene_ids: Optional[List[str]]
+    scene_ids: Optional[Dict[str, str]]
 
     # resulting Items
     items : Optional[Any]
 
     # output message, after the validation of the geojson
-    output_message: Optional[str]
+    query: str
+
+    # Collection ID
+    collectionid : str
 
 
 # model
@@ -68,7 +65,7 @@ llm = BaseChatOpenAI(model=Model, temperature=0)
 
 ### NODES
 
-def generate_searchparams(state: LocationState, query):
+def generate_searchparams(state: LocationState):
     ''' Generate search parameters from user input based on structured output'''
     class StacSearchParams(BaseModel):
         location: list = Field(description="The geographic location indicated in the search as a geocodable location string to be used for geocoding via Nominatim to find its coordinates")
@@ -84,7 +81,7 @@ def generate_searchparams(state: LocationState, query):
     )
     message = [HumanMessage(content=prompt)]
     chain = message | llm | parser
-    response = chain.invoke({"query": query})
+    response = chain.invoke({"query": state["query"]})
 
     print(response)
 
@@ -97,7 +94,7 @@ def generate_searchparams(state: LocationState, query):
     # update the state and the message
     return {"location": response.location,  "datetime_range" : response.datetime_range, "messages": new_message }
 
-#def getgeometry():
+#def getgeometry(state:LocationState):
 #    return {"bbox": bbox}
 
 def show_on_map(state:LocationState):
@@ -142,10 +139,10 @@ def show_on_map(state:LocationState):
 
 
 #Access our STAC data collection
-def search_stac(state: LocationState, collection_id):
+def search_stac(state: LocationState):
     url = f"{BASE_URL}/search" #STAC search endpoint 
     payload = {
-        "collections": [collection_id],
+        "collections": state["collectionid"],
         "limit": 10
     }
     #Parameters (can be adjusted)
@@ -159,41 +156,60 @@ def search_stac(state: LocationState, collection_id):
     print("Sending request to STAC API")
     response = requests.post(url, json=payload, headers=headers)
     response.raise_for_status()
+
     items = response.json().get("features", [])
+
     print(f"Found {len(items)} items.")
     
     scene_ids = {item['id']:{item['properties']['datetime']} for item in items}
     
     return {"scene_ids":scene_ids, "items":items}
 
+def summarise_result(state:LocationState):
+    items = state["items"]
+    message = f""" These are the results from a request sent to the Stac API based on this request: {state["query"]}. Summarise and evaluate them. These are the results: {items}"""
+    # message = [HumanMessage(content=message)] ?
+    response = llm.invoke(message)
+    print("Result Summary: ", response)
+    new_message = state.get("messages", []) + [
+        {"role": "user", "content": message},
+        {"role": "agent", "content": response.content}
+    ]
+    return {"messages": new_message }
 
-def main():
-    #Step 1: Natural Language Query form user 
-    user_question = "Find Sentinel-2 MAJA data over Cologne."
+# Create the graph
+graph = StateGraph(LocationState)
 
-    #Call llm and print response 
-    llm_output = call_llm(user_question)
-    print("LLM Output:", llm_output)
-    
-    #Step 2: parse the string as JSON
-    try:
-        search_params = json.loads(llm_output)
-    except json.JSONDecodeError:
-        print("Failed to parse LLM output.")
-        return
+# Add nodes
+graph.add_node("extract_search", generate_searchparams)
+graph.add_node("get_geom", getgeometry)
+graph.add_node("show_map", show_on_map)
+graph.add_node("search_stac", search_stac)
+graph.add_node("summarise_results", summarise_result)
 
-    #Use one specific collection as an example 
-    collection_id = "S2_L2A_MAJA"
+# Add Edges
+graph.add_edge(START, "extract_search")
+graph.add_edge("extract_search", "get_geom")
+graph.add_edge("get_geom", "show_map")
+graph.add_edge("show_map", "search_stac")
+graph.add_edge("search_stac", "summarise_results")
+graph.add_edge("summarise_results", END)
 
-    #Step 3:Perform the STAC search within the given collection
-    search_stac(
-        collection_id=collection_id,
-        bbox=search_params.get("bbox"),
-        datetime_range=search_params.get("datetime_range")
-    )
+# Compile the graph
+compiled_graph = graph.compile()
 
-    # Step 4: Display bbox in leaflet view
-    map_bbox(bbox=search_params.get("bbox"))
+# draw mermaid graph
 
-if __name__ == "__main__":
-    main()
+# Initiate
+print("\nProcessing the user input...")
+result = compiled_graph.invoke({
+    "location": None,
+    "bbox": None,
+    "datetime_range": None,
+    "bboxmap": None,
+    "messages": [],
+    "scene_ids": None,
+    "items": None,
+    "query": "Find Sentinel-2 MAJA data over Cologne.",
+    "collectionid": "S2_L2A_MAJA" 
+})
