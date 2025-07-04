@@ -1,0 +1,42 @@
+Processing the user input...
+>>> result = compiled_graph.invoke({
+...     "location": None,
+...     "bbox": None,
+...     "datetime_range": None,
+...     "bboxmap": None,
+...     "messages": [],
+...     "scene_ids": None,
+...     "items": None,
+...     "query": "Find Sentinel-2 MAJA data in February 2024 over Dresden.",
+...     "collectionid": "S2_L2A_MAJA" 
+... })
+location=['Dresden'] datetime_range='2024-02-01/2024-02-29'
+Sending request to Nominatim API
+Creating the map...
+Map saved to bbox_map.html. To view in live tab in VS Code, install the extension Live Preview, open map_bbox.html, press ctrl+shift+p and run Live Preview: Show Preview (Internal Browser)
+{'collections': ['S2_L2A_MAJA'], 'limit': 10, 'bbox': [13.5793237, 50.974937, 13.9660626, 51.1777202], 'datetime': '2024-02-01/2024-02-29'}
+Sending request to STAC API
+Found 3 items:
+ID: SENTINEL2B_20240225-102629-995_L2A_T33UVS_C, Date: 2024-02-25T10:19:19.024+00:00
+ID: SENTINEL2B_20240225-102637-776_L2A_T33UUS_C, Date: 2024-02-25T10:19:19.024+00:00
+ID: SENTINEL2A_20240224-100638-222_L2A_T33UVS_C, Date: 2024-02-24T10:00:21.024+00:00
+Result Summary:  Based on the provided results from the Stac API, I will evaluate the contents of the items regarding the initial request to find Sentinel-2 MAJA data in February 2024 over Dresden and recommend one of the items to use.     
+
+All three items are from the S2_L2A_MAJA collection, which is a level 2A product that provides bottom-of-atmosphere reflectance data. The items have different acquisition dates and cloud cover percentages.
+
+1. SENTINEL2B_20240225-102629-995_L2A_T33UVS_C: This item has an acquisition date of 2024-02-25 and a cloud cover percentage of 1%. The geometry of this item covers the area of interest, Dresden.
+2. SENTINEL2B_20240225-102637-776_L2A_T33UUS_C: This item has an acquisition date of 2024-02-25 and a cloud cover percentage of 39%. The geometry of this item also covers the area of interest, Dresden.
+3. SENTINEL2A_20240224-100638-222_L2A_T33UVS_C: This item has an acquisition date of 2024-02-24 and a cloud cover percentage of 9%. The geometry of this item covers the area of interest, Dresden.
+
+Based on the cloud cover percentage, I recommend using the item SENTINEL2B_20240225-102629-995_L2A_T33UVS_C, which has the lowest cloud cover percentage of 1%. This item is likely to provide the most accurate and useful data for analysis.  
+
+Please note that the choice of item ultimately depends on the specific requirements of your project and the trade-offs between factors such as cloud cover, acquisition date, and data quality.
+
+Here is a summary of the recommended item:
+
+- Item ID: SENTINEL2B_20240225-102629-995_L2A_T33UVS_C
+- Acquisition Date: 2024-02-25
+- Cloud Cover Percentage: 1%
+- Geometry: Covers the area of interest, Dresden
+
+You can download the data for this item using the provided href links in the assets section of the item.
