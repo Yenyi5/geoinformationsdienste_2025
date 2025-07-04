@@ -14,12 +14,11 @@ from langchain_core.messages import HumanMessage
 
 #!pip install -qU langsmith
 
-#Define API key, endpoint, llm, URL for STAC data collection
+#Define API key, endpoint, llm
 API_Key = "7f966d739f12900214b52741e3f80ff2" 
 API_Endpoint = "https://chat-ai.academiccloud.de/v1"
 #Model =  "deepseek-r1" 
 Model =  "llama-3.3-70b-instruct"
-BASE_URL = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 
 os.environ["OPENAI_API_KEY"] = API_Key
 os.environ["OPENAI_API_BASE"] = API_Endpoint
@@ -29,6 +28,10 @@ os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 os.environ["LANGCHAIN_API_KEY"] = "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"
 
+# API URLs
+BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
+BASE_URL_OSM = "   https://nominatim.openstreetmap.org"
+
 
 class LocationState(TypedDict):
 
@@ -37,6 +40,9 @@ class LocationState(TypedDict):
 
     # bbox
     bbox: Optional[List[int]]
+
+    # bbox display name
+    bbox_name : Optional[str]
 
     # datetime range
     datetime_range : Optional[str]
@@ -95,9 +101,24 @@ def generate_searchparams(state: LocationState):
     return {"location": response.location,  "datetime_range" : response.datetime_range, "messages": new_message }
 
 def getgeometry(state:LocationState):
-    location = state["location"]
-    bbox = [13.4,52.3,13.7,52.6] # replace by sending loaction to geocoding and assigning result to bbox
-    return {"bbox": bbox}
+    url = f"{BASE_URL_OSM}/search" # OSM Nominatim search endpoint 
+    params = {
+        "q": state["location"],
+        "format": "json",
+        "limit": 1
+    }
+    headers = {"User-Agent": "geoid-stac-client/1.0 (lucie.kluwe@mailbox.tu-dresden.de)"}
+    print("Sending request to Nominatim API")
+    response = requests.get(url, params=params, headers=headers)
+    response.raise_for_status()
+    results = response.json()
+    if results:
+        location_info = results[0]
+        bbox = [float(location_info["boundingbox"][2]), float(location_info["boundingbox"][0]),
+                float(location_info["boundingbox"][3]), float(location_info["boundingbox"][1])]
+        return {"bbox": bbox, "bbox_name": location_info["display_name"]}
+    else:
+        return {"bbox": None, "bbox_name": None}
 
 def show_on_map(state:LocationState):
     "Show the bounding box on a map"
@@ -123,7 +144,7 @@ def show_on_map(state:LocationState):
             [max_lat, max_lon]
         ],
         color='cornflowerblue',
-        tooltip=state["location"][0],
+        tooltip=state["bbox_name"],
         fill=True,
         fill_opacity=0.2
     ).add_to(m)
@@ -136,7 +157,7 @@ def show_on_map(state:LocationState):
 
 #Access our STAC data collection
 def search_stac(state: LocationState):
-    url = f"{BASE_URL}/search" #STAC search endpoint 
+    url = f"{BASE_URL_STAC}/search" #STAC search endpoint 
     payload = {
         "collections": [state["collectionid"]],
         "limit": 10
@@ -150,22 +171,23 @@ def search_stac(state: LocationState):
     print(payload)
 
     headers = {"Content-Type": "application/json"}
-    #Makes request to the STAC API
+    # Makes request to the STAC API
     print("Sending request to STAC API")
     response = requests.post(url, json=payload, headers=headers)
     response.raise_for_status()
 
     items = response.json().get("features", [])
-
-    print(f"Found {len(items)} items.")
     
     scene_ids = {item['id']:{item['properties']['datetime']} for item in items}
-    
+    print(f"Found {len(items)} items:")
+    for item in items:
+        print(f"ID: {item['id']}, Date: {item['properties']['datetime']}")
+
     return {"scene_ids":scene_ids, "items":items}
 
 def summarise_result(state:LocationState):
     items = state["items"]
-    message = f""" These are the results from a request sent to the Stac API. Summarise and evaluate the contents of the items reagrding the initial request {state["query"]}. These are the results: {items}"""
+    message = f""" These are the results from a request sent to the Stac API. Evaluate the contents of the items regarding the initial request {state["query"]}. Recommend one of the items to use. These are the results: {items}"""
     # message = [HumanMessage(content=message)] ?
     response = llm.invoke(message)
     print("Result Summary: ", response.content)
@@ -215,6 +237,6 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find Sentinel-2 MAJA data in February 2024 over Cologne.",
+    "query": "Find Sentinel-2 MAJA data in February 2024 over Dresden.",
     "collectionid": "S2_L2A_MAJA" 
 })
