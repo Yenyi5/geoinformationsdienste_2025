@@ -33,6 +33,7 @@ BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
 BASE_URL_OSM = "   https://nominatim.openstreetmap.org"
 
 
+
 class LocationState(TypedDict):
 
     # location
@@ -63,11 +64,19 @@ class LocationState(TypedDict):
     query: str
 
     # Collection ID
-    collectionid : str
+    collectionid : List[str]
 
 
 # model
 llm = BaseChatOpenAI(model=Model, temperature=0)
+
+# get stac collections
+def get_stac_collections(limit: int = 10):
+    response = requests.get("https://geoservice.dlr.de/eoc/ogc/stac/v1/collections")
+    response.raise_for_status()
+    collections = response.json()["collections"]
+    return[col["id"] for col in collections]
+
 
 ### NODES
 
@@ -87,7 +96,7 @@ def generate_searchparams(state: LocationState):
     )
     chain = prompt | llm | parser
     response = chain.invoke({"query": state["query"]})
-
+    print("📍 LLM extracted location:", response.location)
     print(response)
 
     # Update messages for tracking
@@ -96,7 +105,7 @@ def generate_searchparams(state: LocationState):
         {"role": "user", "content": message},
         {"role": "agent", "content": response}
     ]
-
+    
     # update the state and the message
     return {"location": response.location,  "datetime_range" : response.datetime_range, "messages": new_message }
 
@@ -112,6 +121,7 @@ def getgeometry(state:LocationState):
     response = requests.get(url, params=params, headers=headers)
     response.raise_for_status()
     results = response.json()
+    print(state["location"])
     if results:
         location_info = results[0]
         bbox = [float(location_info["boundingbox"][2]), float(location_info["boundingbox"][0]),
@@ -157,10 +167,11 @@ def show_on_map(state:LocationState):
 
 #Access our STAC data collection
 def search_stac(state: LocationState):
+    
     url = f"{BASE_URL_STAC}/search" #STAC search endpoint 
     payload = {
-        "collections": [state["collectionid"]],
-        "limit": 10
+        "collections": state["collectionid"],
+        "limit": 5
     }
     #Parameters (can be adjusted)
     if state["bbox"]:
@@ -237,6 +248,6 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find Sentinel-2 MAJA data in February 2024 over Dresden.",
-    "collectionid": "S2_L2A_MAJA" 
+    "query": "Find satellite data in May 2024 over Berlin.",
+    "collectionid": get_stac_collections(10) 
 })
