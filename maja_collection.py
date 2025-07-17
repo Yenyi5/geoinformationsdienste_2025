@@ -71,11 +71,11 @@ class LocationState(TypedDict):
 llm = BaseChatOpenAI(model=Model, temperature=0)
 
 # get stac collections
-def get_stac_collections(limit: int = 10):
+def get_stac_collections():
     response = requests.get("https://geoservice.dlr.de/eoc/ogc/stac/v1/collections")
     response.raise_for_status()
     collections = response.json()["collections"]
-    return[col["id"] for col in collections]
+    return [col["id"] for col in collections]
 
 
 ### NODES
@@ -96,7 +96,7 @@ def generate_searchparams(state: LocationState):
     )
     chain = prompt | llm | parser
     response = chain.invoke({"query": state["query"]})
-    print("📍 LLM extracted location:", response.location)
+    print("LLM extracted location:", response.location)
     print(response)
 
     # Update messages for tracking
@@ -248,6 +248,6 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find satellite data in May 2024 over Berlin.",
-    "collectionid": get_stac_collections(10) 
+    "query": "Find satellite data in June 2024 over Leipzig.",
+    "collectionid": get_stac_collections()
 })
