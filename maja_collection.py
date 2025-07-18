@@ -16,15 +16,15 @@ from langchain_core.messages import HumanMessage
 
 #Define API key, endpoint, llm
 # academic cloud
-#API_Key = "7f966d739f12900214b52741e3f80ff2" 
-#API_Endpoint = "https://chat-ai.academiccloud.de/v1"
+API_Key = "7f966d739f12900214b52741e3f80ff2" 
+API_Endpoint = "https://chat-ai.academiccloud.de/v1"
 #Model =  "deepseek-r1" 
-#Model =  "llama-3.3-70b-instruct"
+Model =  "llama-3.3-70b-instruct"
 
 # openAI:
-API_Key = ""
-API_Endpoint = "https://api.openai.com/v1/chat/completions"
-Model = "gpt-3.5-turbo-0125"
+#API_Key = 
+#API_Endpoint = "https://api.openai.com/v1"
+#Model = "gpt-4o-mini"
 
 
 os.environ["OPENAI_API_KEY"] = API_Key
@@ -70,8 +70,11 @@ class LocationState(TypedDict):
     # output message, after the validation of the geojson
     query: str
 
+    # Collections in catalog
+    catalogcollections: List[dict]
+
     # Collection ID
-    collectionid : List[str]
+    collectionid : Optional[List[str]]
 
 
 # model
@@ -82,7 +85,16 @@ def get_stac_collections():
     response = requests.get("https://geoservice.dlr.de/eoc/ogc/stac/v1/collections")
     response.raise_for_status()
     collections = response.json()["collections"]
-    return [col["id"] for col in collections]
+    filtered = []
+    for col in collections:
+        filtered.append({
+            "id": col.get("id"),
+            "description": col.get("description"),
+            "keywords": col.get("keywords"),
+            "extent": col.get("extent")
+        })
+    return filtered
+    #return [col["id"] for col in collections]
 
 
 ### NODES
@@ -92,14 +104,18 @@ def generate_searchparams(state: LocationState):
     class StacSearchParams(BaseModel):
         location: list = Field(description="The geographic location indicated in the search as a geocodable location string to be used for geocoding via Nominatim to find its coordinates")
         datetime_range: str = Field(description="The time span in the format YYYY-MM-DD/YYYY-MM-DD")
+        collectionid: str = Field(description = "The collection id from the STAC catalog that best matches the user's query.")
     parser = PydanticOutputParser(pydantic_object=StacSearchParams)
     prompt = PromptTemplate(
         template=(
-            "You are a system that translates user questions in natural language into STAC API parameters."
-            "Given the question: {query}, extract the following: {format_instructions} "
+            "You are a system that translates user questions in natural language into STAC API parameters.\n"
+            "Given the question: {query}, choose the best collection id from the following options:\n{collections}\n"
+            "Extract the following: {format_instructions}"
         ),
         input_variables=["query"],
-        partial_variables={"format_instructions": parser.get_format_instructions()},
+        partial_variables={
+            "collections" : json.dumps(state["catalogcollections"], indent=2),
+            "format_instructions": parser.get_format_instructions()},
     )
     chain = prompt | llm | parser
     response = chain.invoke({"query": state["query"]})
@@ -114,7 +130,7 @@ def generate_searchparams(state: LocationState):
     ]
     
     # update the state and the message
-    return {"location": response.location,  "datetime_range" : response.datetime_range, "messages": new_message }
+    return {"location": response.location,  "datetime_range" : response.datetime_range, "collectionid" : [response.collectionid], "messages": new_message }
 
 def getgeometry(state:LocationState):
     url = f"{BASE_URL_OSM}/search" # OSM Nominatim search endpoint 
@@ -255,6 +271,7 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find satellite data in June 2024 over Leipzig.",
-    "collectionid": get_stac_collections()
+    "query": "Find the most recent elevation data for saxony.",
+    "catalogcollections": get_stac_collections(),
+    "collectionid": None
 })
