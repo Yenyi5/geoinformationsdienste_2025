@@ -15,10 +15,17 @@ from langchain_core.messages import HumanMessage
 #!pip install -qU langsmith
 
 #Define API key, endpoint, llm
-API_Key = "7f966d739f12900214b52741e3f80ff2" 
-API_Endpoint = "https://chat-ai.academiccloud.de/v1"
+# academic cloud
+#API_Key = "7f966d739f12900214b52741e3f80ff2" 
+#API_Endpoint = "https://chat-ai.academiccloud.de/v1"
 #Model =  "deepseek-r1" 
-Model =  "llama-3.3-70b-instruct"
+#Model =  "llama-3.3-70b-instruct"
+
+# openAI:
+API_Key = ""
+API_Endpoint = "https://api.openai.com/v1/chat/completions"
+Model = "gpt-3.5-turbo-0125"
+
 
 os.environ["OPENAI_API_KEY"] = API_Key
 os.environ["OPENAI_API_BASE"] = API_Endpoint
