@@ -22,7 +22,7 @@ API_Endpoint = "https://chat-ai.academiccloud.de/v1"
 Model =  "llama-3.3-70b-instruct"
 
 # openAI:
-#API_Key = 
+#API_Key = ""
 #API_Endpoint = "https://api.openai.com/v1"
 #Model = "gpt-4o-mini"
 
@@ -87,6 +87,7 @@ def get_stac_collections():
     collections = response.json()["collections"]
     filtered = []
     for col in collections:
+        # filter to relevant info because else llm query exceeds allowed length
         filtered.append({
             "id": col.get("id"),
             "description": col.get("description"),
@@ -94,7 +95,6 @@ def get_stac_collections():
             "extent": col.get("extent")
         })
     return filtered
-    #return [col["id"] for col in collections]
 
 
 ### NODES
@@ -109,7 +109,8 @@ def generate_searchparams(state: LocationState):
     prompt = PromptTemplate(
         template=(
             "You are a system that translates user questions in natural language into STAC API parameters.\n"
-            "Given the question: {query}, choose the best collection id from the following options:\n{collections}\n"
+            "Given the question: {query}, choose the best fitting collection id from the following options:\n{collections}\n"
+            "If no time span is given in the question, do not set a temporal extent. \n"
             "Extract the following: {format_instructions}"
         ),
         input_variables=["query"],
@@ -169,7 +170,7 @@ def show_on_map(state:LocationState):
     center_lat = (min_lat + max_lat) / 2
     center_lon = (min_lon + max_lon) / 2
     # Create map centered on bbox
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=10)
+    m = folium.Map(location=[center_lat, center_lon])
     # Draw rectangle for bbox
     folium.Rectangle(
         bounds=[
@@ -271,7 +272,7 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find the most recent elevation data for saxony.",
+    "query": "Find LST data for the summer 2018 for the two largest cities in Germany.",
     "catalogcollections": get_stac_collections(),
     "collectionid": None
 })

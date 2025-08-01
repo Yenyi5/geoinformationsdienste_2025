@@ -1,0 +1,58 @@
+Prompt: "You are a system that translates user questions in natural language into STAC API parameters.\n"
+            "Given the question: {query}, choose the best collection id from the following options:\n{collections}\n"
+            "Extract the following: {format_instructions}"
+
+"Find the most recent elevation data for saxony."
+    - model used: "llama-3.3-70b-instruct" 
+    - collection chosen: 'TDM_DEM_90'
+    - location name: 'Saxony'
+    - temporal extent: '2010-01-01/2024-02-28'
+    - recommendation: "the item `TDM1_DEM__30_N50E015` has the latest `updated` timestamp (`2023-08-22T10:45:06.725+00:00`)"
+
+"Find building data for the Ruhrgebiet."
+    - model used: "llama-3.3-70b-instruct" 
+    - collection chosen: ['IOER_BUILDINGS_NONRES_GER_1M']
+    - location name: ['Ruhrgebiet, Germany'] -> works
+    - 'datetime': '2019-01-01/2019-12-31' -> this is the temporal extent of the collection but it gets no result
+    - no result
+
+"Find settlement data for the Ruhrgebiet."
+    - model used: "llama-3.3-70b-instruct" 
+    - collection chosen:  ['IOER_BUILDINGS_NONRES_GER_1M'] -> i would have chosen WSF_2019
+    - location name: 'Ruhrgebiet'
+    - temporal extent: none
+    - recommendation: "if the area of interest leans more towards the eastern parts of the Ruhr region, **Item 1** (`ids_1m_footprint_buildings_nonresidential_COG_100kmN31E41`) might be more appropriate. For areas more to the west, **Item 2** (`ids_1m_footprint_buildings_nonresidential_COG_100kmN31E40`) could be more relevant."
+
+--> Anpassung prompt: "You are a system that translates user questions in natural language into STAC API parameters.\n"
+            "Given the question: {query}, select all fitting collections from the following options and choose the best one:\n{collections}\n"
+            "Extract the following: {format_instructions}"
+
+"Find settlement data for the Ruhrgebiet."
+    - same but temporal extent set: '2019-01-01/2019-12-31'
+    - recommendation: nothing found
+
+--> prompt set to:  "You are a system that translates user questions in natural language into STAC API parameters.\n"
+            "Given the question: {query}, choose the best fitting collection id from the following options:\n{collections}\n"
+            "If no time span is given in the question, do not set a temporal extent. \n"
+            "Extract the following: {format_instructions}"
+
+"Find settlement data for the Ruhrgebiet."
+    - no temporal extent set
+
+"Find LST data for the two largest cities in Germany."
+    - model used: "llama-3.3-70b-instruct" 
+    - collection chosen: ['TIMELINE_AVHRR_P1M_LSTD'] -> hätte ich auch gewählt
+    - location name: 'Germany'
+    - temporal extent: None
+    - recommendation: "From the data provided, the most recent item based on "end_datetime" is:
+- **TL-L3-LST-AVHRR_NOAA-202212_monthly-fv0201**, which covers the period from 2022-12-01 to 2022-12-31.
+This item would be recommended for use in analyses requiring the most current LST data available from the provided list, assuming it spatially covers the areas of interest (Berlin and Hamburg), which is likely given the broad spatial extent of the data."
+
+"Find LST data for the summer 2018 for the two largest cities in Germany."
+    - model used: "llama-3.3-70b-instruct" 
+    - collection chosen: ['TIMELINE_AVHRR_P1M_LSTD'] -> hätte ich auch gewählt
+    - location name: ['Berlin', 'Hamburg'] -> then only gets Hamburg
+    - temporal extent: '2018-06-01/2018-08-31'
+    - recommendation: "I recommend using the 'lstd-mean' asset from the item 'TL-L3-LST-AVHRR_NOAA-201807_monthly-fv0201', as it provides the mean LST value for the month of July 2018."
+
+
