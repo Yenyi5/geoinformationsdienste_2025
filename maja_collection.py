@@ -3,6 +3,7 @@ import json
 import folium
 from langchain_openai.chat_models.base import BaseChatOpenAI
 import os
+from datetime import datetime
 
 from typing import TypedDict, List, Dict, Any, Optional
 from langchain.output_parsers import PydanticOutputParser
@@ -101,6 +102,8 @@ def get_stac_collections():
 
 def generate_searchparams(state: LocationState):
     ''' Generate search parameters from user input based on structured output'''
+    start = datetime.now()
+    print("Extracting search parameters...")
     class StacSearchParams(BaseModel):
         location: list = Field(description="The geographic location indicated in the search as a geocodable location string to be used for geocoding via Nominatim to find its coordinates")
         datetime_range: str = Field(description="The time span in the format YYYY-MM-DD/YYYY-MM-DD")
@@ -120,7 +123,7 @@ def generate_searchparams(state: LocationState):
     )
     chain = prompt | llm | parser
     response = chain.invoke({"query": state["query"]})
-    print("LLM extracted location:", response.location)
+    print(f"LLM extracted \n - location: {response.location}\n - date range: {response.datetime_range}\n - collection ID: {response.collectionid}")
     print(response)
 
     # Update messages for tracking
@@ -131,9 +134,11 @@ def generate_searchparams(state: LocationState):
     ]
     
     # update the state and the message
+    print(" * Parameter extraction time: ", datetime.now()- start)
     return {"location": response.location,  "datetime_range" : response.datetime_range, "collectionid" : [response.collectionid], "messages": new_message }
 
 def getgeometry(state:LocationState):
+    start = datetime.now()
     url = f"{BASE_URL_OSM}/search" # OSM Nominatim search endpoint 
     params = {
         "q": state["location"],
@@ -141,21 +146,22 @@ def getgeometry(state:LocationState):
         "limit": 1
     }
     headers = {"User-Agent": "geoid-stac-client/1.0 (lucie.kluwe@mailbox.tu-dresden.de)"}
-    print("Sending request to Nominatim API")
+    print("Sending request to Nominatim API...")
     response = requests.get(url, params=params, headers=headers)
     response.raise_for_status()
     results = response.json()
-    print(state["location"])
+    print(" * Response time:", datetime.now() - start)
     if results:
         location_info = results[0]
         bbox = [float(location_info["boundingbox"][2]), float(location_info["boundingbox"][0]),
                 float(location_info["boundingbox"][3]), float(location_info["boundingbox"][1])]
+        print("Extracted location: ", location_info["display_name"])
         return {"bbox": bbox, "bbox_name": location_info["display_name"]}
     else:
         return {"bbox": None, "bbox_name": None}
 
 def show_on_map(state:LocationState):
-    "Show the bounding box on a map"
+    "Showing the bounding box on a map"
 
     print("Creating the map...")
 
@@ -191,6 +197,7 @@ def show_on_map(state:LocationState):
 
 #Access our STAC data collection
 def search_stac(state: LocationState):
+    start = datetime.now()
     
     url = f"{BASE_URL_STAC}/search" #STAC search endpoint 
     payload = {
@@ -207,7 +214,7 @@ def search_stac(state: LocationState):
 
     headers = {"Content-Type": "application/json"}
     # Makes request to the STAC API
-    print("Sending request to STAC API")
+    print("Sending request to STAC API...")
     response = requests.post(url, json=payload, headers=headers)
     response.raise_for_status()
 
@@ -218,9 +225,11 @@ def search_stac(state: LocationState):
     for item in items:
         print(f"ID: {item['id']}, Date: {item['properties']['datetime']}")
 
+    print(" * Response time:", datetime.now()- start)
     return {"scene_ids":scene_ids, "items":items}
 
 def summarise_result(state:LocationState):
+    start = datetime.now()
     items = state["items"]
     message = f""" These are the results from a request sent to the Stac API. Evaluate the contents of the items regarding the initial request {state["query"]}. Recommend one of the items to use. These are the results: {items}"""
     # message = [HumanMessage(content=message)] ?
@@ -230,6 +239,7 @@ def summarise_result(state:LocationState):
         {"role": "user", "content": message},
         {"role": "agent", "content": response.content}
     ]
+    print(" * Summary time:", datetime.now() - start)
     return {"messages": new_message }
 
 # Create the graph
@@ -260,9 +270,12 @@ try:
     display(Image(compiled_graph.get_graph().draw_mermaid_png()))
 except Exception:
     # This requires some extra dependencies and is optional
+    print("Displaying graph not possible...")
     pass
 
 # Initiate
+start_all = datetime.now()
+
 print("\nProcessing the user input...")
 result = compiled_graph.invoke({
     "location": None,
@@ -272,7 +285,9 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find LST data for the summer 2018 for the two largest cities in Germany.",
+    "query": "Find Sentinel 2 data for the summer 2018 for Paris.",
     "catalogcollections": get_stac_collections(),
     "collectionid": None
 })
+
+print("Total execution time:", datetime.now() - start_all)
