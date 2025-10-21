@@ -4,6 +4,7 @@ import folium
 from langchain_openai.chat_models.base import BaseChatOpenAI
 import os
 from datetime import datetime
+import random
 
 from typing import TypedDict, List, Dict, Any, Optional
 from langchain.output_parsers import PydanticOutputParser
@@ -77,6 +78,9 @@ class LocationState(TypedDict):
     # Collection ID
     collectionid : Optional[List[str]]
 
+    # map object of bbox
+    resultsmap: Optional[Any]
+
 
 # model
 llm = BaseChatOpenAI(model=Model, temperature=0)
@@ -124,7 +128,7 @@ def generate_searchparams(state: LocationState):
     chain = prompt | llm | parser
     response = chain.invoke({"query": state["query"]})
     print(f"LLM extracted \n - location: {response.location}\n - date range: {response.datetime_range}\n - collection ID: {response.collectionid}")
-    print(response)
+    #print(response)
 
     # Update messages for tracking
     message = [HumanMessage(prompt.format(query=state["query"]))]
@@ -168,7 +172,8 @@ def show_on_map(state:LocationState):
     if state["bbox"]:
         bbox = state["bbox"]
     else:
-        "No bbox provided."
+        print("No bbox provided.")
+        return {"bboxmap":None}
 
     # bbox: [min_lon, min_lat, max_lon, max_lat]
     min_lon, min_lat, max_lon, max_lat = bbox
@@ -189,10 +194,13 @@ def show_on_map(state:LocationState):
         fill_opacity=0.2
     ).add_to(m)
 
+    # zoom map to rectangle
+    m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
+
     m.save("bbox_map.html")
-    print("Map saved to bbox_map.html. To view in live tab in VS Code, install the extension Live Preview, open map_bbox.html, press ctrl+shift+p and run Live Preview: Show Preview (Internal Browser)")
+    print(" * Map saved to bbox_map.html. To view in live tab in VS Code, install the extension Live Preview, open map_bbox.html, press ctrl+shift+p and run Live Preview: Show Preview (Internal Browser)")
     #display(m)
-    return {"map_bbox":m}
+    return {"bboxmap":m}
 
 
 #Access our STAC data collection
@@ -201,8 +209,8 @@ def search_stac(state: LocationState):
     
     url = f"{BASE_URL_STAC}/search" #STAC search endpoint 
     payload = {
-        "collections": state["collectionid"],
-        "limit": 5
+        "collections": state["collectionid"]#,
+        #"limit": 20
     }
     #Parameters (can be adjusted)
     if state["bbox"]:
@@ -219,7 +227,7 @@ def search_stac(state: LocationState):
     response.raise_for_status()
 
     items = response.json().get("features", [])
-    
+    #print(items[0])
     scene_ids = {item['id']:{item['properties']['datetime']} for item in items}
     print(f"Found {len(items)} items:")
     for item in items:
@@ -230,8 +238,8 @@ def search_stac(state: LocationState):
 
 def summarise_result(state:LocationState):
     start = datetime.now()
-    items = state["items"]
-    message = f""" These are the results from a request sent to the Stac API. Evaluate the contents of the items regarding the initial request {state["query"]}. Recommend one of the items to use. These are the results: {items}"""
+    items = state["items"][:10]
+    message = f""" These are the first 10 results from a request sent to the Stac API. Evaluate the contents of the items regarding the initial request {state["query"]}. Recommend one of the items to use. These are the results: {items}"""
     # message = [HumanMessage(content=message)] ?
     response = llm.invoke(message)
     print("Result Summary: ", response.content)
@@ -242,6 +250,60 @@ def summarise_result(state:LocationState):
     print(" * Summary time:", datetime.now() - start)
     return {"messages": new_message }
 
+def show_results_on_map(state:LocationState):
+    "Showing the bounding box on a map"
+
+    print("Showing result areas on the map...")
+
+    if state["items"]:
+        items = state["items"][:20]
+    else:
+        print("No result items provided.")
+        return {"resultsmap": None}
+    
+    if state["bboxmap"]:
+        m = state["bboxmap"]
+    else:
+        print("No bbox map provided.")
+        return {"resultsmap": None}
+
+
+    scene_geoms = {item['id']: item['geometry'] for item in items}
+
+    # Generate random colors for each polygon
+    def random_color():
+        return "#{:06x}".format(random.randint(0, 0xFFFFFF))
+    
+    for scene_id, geom in scene_geoms.items():
+        color = random_color()
+
+        folium.GeoJson(
+            geom,
+            name=scene_id,
+            style_function=lambda feature, color=color: {
+                "fillColor": color,
+                "color": color,
+                #"weight": 2,
+                "fillOpacity": 0.2
+            },
+            tooltip=scene_id  # show scene_id on hover
+        ).add_to(m)
+
+    # Fit map to all geometries
+    bounds = []
+    for geom in scene_geoms.values():
+        coords = geom["coordinates"][0]  # assuming Polygon
+        # swap to [lat, lon] for Leaflet
+        bounds.extend([[lat, lon] for lon, lat in coords])
+
+    m.fit_bounds(bounds)
+    folium.LayerControl().add_to(m)
+
+    m.save("results_map.html")
+    print(" * Map saved to results_map.html")
+    #display(m)
+    return {"resultsmap":m}
+
 # Create the graph
 graph = StateGraph(LocationState)
 
@@ -251,6 +313,7 @@ graph.add_node("get_geom", getgeometry)
 graph.add_node("show_map", show_on_map)
 graph.add_node("search_stac", search_stac)
 graph.add_node("summarise_results", summarise_result)
+graph.add_node("show_results_map", show_results_on_map)
 
 # Add Edges
 graph.add_edge(START, "extract_search")
@@ -258,7 +321,8 @@ graph.add_edge("extract_search", "get_geom")
 graph.add_edge("get_geom", "show_map")
 graph.add_edge("show_map", "search_stac")
 graph.add_edge("search_stac", "summarise_results")
-graph.add_edge("summarise_results", END)
+graph.add_edge("summarise_results", "show_results_map")
+graph.add_edge("show_results_map", END)
 
 # Compile the graph
 compiled_graph = graph.compile()
@@ -285,9 +349,11 @@ result = compiled_graph.invoke({
     "messages": [],
     "scene_ids": None,
     "items": None,
-    "query": "Find Sentinel 2 data for the summer 2018 for Paris.",
+    "query": "Find Sentinel-2 MAJA data over Berlin in 2024",
     "catalogcollections": get_stac_collections(),
-    "collectionid": None
+    "collectionid": None,
+    "resultsmap": None
+
 })
 
 print("Total execution time:", datetime.now() - start_all)

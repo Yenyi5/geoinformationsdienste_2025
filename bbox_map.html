@@ -17,7 +17,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_96c053d11706142a02d08b7f0471e45b {
+                #map_d0313d5ee9b5a3bf76a8bf7de1736229 {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -54,16 +54,16 @@
 <body>
     
     
-            <div class="folium-map" id="map_96c053d11706142a02d08b7f0471e45b" ></div>
+            <div class="folium-map" id="map_d0313d5ee9b5a3bf76a8bf7de1736229" ></div>
         
 </body>
 <script>
     
     
-            var map_96c053d11706142a02d08b7f0471e45b = L.map(
-                "map_96c053d11706142a02d08b7f0471e45b",
+            var map_d0313d5ee9b5a3bf76a8bf7de1736229 = L.map(
+                "map_d0313d5ee9b5a3bf76a8bf7de1736229",
                 {
-                    center: [48.85886575, 2.3469411],
+                    center: [52.50687675, 13.42475295],
                     crs: L.CRS.EPSG3857,
                     ...{
   "zoom": 10,
@@ -78,7 +78,7 @@
 
         
     
-            var tile_layer_d4001284ba9838828cd328c756ce1006 = L.tileLayer(
+            var tile_layer_1b0ce41d0d1b03aa2d06bbe6b769f148 = L.tileLayer(
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {
   "minZoom": 0,
@@ -95,22 +95,28 @@
             );
         
     
-            tile_layer_d4001284ba9838828cd328c756ce1006.addTo(map_96c053d11706142a02d08b7f0471e45b);
+            tile_layer_1b0ce41d0d1b03aa2d06bbe6b769f148.addTo(map_d0313d5ee9b5a3bf76a8bf7de1736229);
         
     
-            var rectangle_215e314dc1f1628977cd4b41cb9880cb = L.rectangle(
-                [[48.8155755, 2.224122], [48.902156, 2.4697602]],
+            var rectangle_1fc292ab7e7bafd7fc254346728044d9 = L.rectangle(
+                [[52.3382448, 13.088345], [52.6755087, 13.7611609]],
                 {"bubblingMouseEvents": true, "color": "cornflowerblue", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "cornflowerblue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 3}
-            ).addTo(map_96c053d11706142a02d08b7f0471e45b);
+            ).addTo(map_d0313d5ee9b5a3bf76a8bf7de1736229);
         
     
-            rectangle_215e314dc1f1628977cd4b41cb9880cb.bindTooltip(
+            rectangle_1fc292ab7e7bafd7fc254346728044d9.bindTooltip(
                 `<div>
-                     Paris, Île-de-France, France métropolitaine, France
+                     Berlin, Deutschland
                  </div>`,
                 {
   "sticky": true,
 }
+            );
+        
+    
+            map_d0313d5ee9b5a3bf76a8bf7de1736229.fitBounds(
+                [[52.3382448, 13.088345], [52.6755087, 13.7611609]],
+                {}
             );
         
 </script>
