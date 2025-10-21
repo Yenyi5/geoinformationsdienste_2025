@@ -35,7 +35,7 @@ os.environ["OPENAI_API_BASE"] = API_Endpoint
 # langsmith
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-os.environ["LANGCHAIN_API_KEY"] = "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"
+os.environ["LANGCHAIN_API_KEY"] = ""
 
 # API URLs
 BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
