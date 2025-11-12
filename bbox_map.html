@@ -3,6 +3,14 @@
 <head>
     
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -17,7 +25,11 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_e90342f96782337d11f331bae831f7f8 {
+<<<<<<< HEAD
+                #map_24f41b410c3280e1203400d9b7bd3597 {
+=======
+                #map_d0313d5ee9b5a3bf76a8bf7de1736229 {
+>>>>>>> 8fbaa1b6360e2cd9991766e0607ca77afc076dd9
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -26,51 +38,34 @@
                 }
                 .leaflet-container { font-size: 1rem; }
             </style>
-
-            <style>html, body {
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            </style>
-
-            <style>#map {
-                position:absolute;
-                top:0;
-                bottom:0;
-                right:0;
-                left:0;
-                }
-            </style>
-
-            <script>
-                L_NO_TOUCH = false;
-                L_DISABLE_3D = false;
-            </script>
-
         
 </head>
 <body>
     
     
-            <div class="folium-map" id="map_e90342f96782337d11f331bae831f7f8" ></div>
+<<<<<<< HEAD
+            <div class="folium-map" id="map_24f41b410c3280e1203400d9b7bd3597" ></div>
+=======
+            <div class="folium-map" id="map_d0313d5ee9b5a3bf76a8bf7de1736229" ></div>
+>>>>>>> 8fbaa1b6360e2cd9991766e0607ca77afc076dd9
         
 </body>
 <script>
     
     
-            var map_e90342f96782337d11f331bae831f7f8 = L.map(
-                "map_e90342f96782337d11f331bae831f7f8",
+<<<<<<< HEAD
+            var map_24f41b410c3280e1203400d9b7bd3597 = L.map(
+                "map_24f41b410c3280e1203400d9b7bd3597",
+=======
+            var map_d0313d5ee9b5a3bf76a8bf7de1736229 = L.map(
+                "map_d0313d5ee9b5a3bf76a8bf7de1736229",
+>>>>>>> 8fbaa1b6360e2cd9991766e0607ca77afc076dd9
                 {
-                    center: [53.7113809, 9.2148899],
+                    center: [52.50687675, 13.42475295],
                     crs: L.CRS.EPSG3857,
-                    ...{
-  "zoom": 10,
-  "zoomControl": true,
-  "preferCanvas": false,
-}
-
+                    zoom: 10,
+                    zoomControl: true,
+                    preferCanvas: false,
                 }
             );
 
@@ -78,39 +73,49 @@
 
         
     
-            var tile_layer_ca10e06f456dddebf78444c902fb8f9b = L.tileLayer(
+<<<<<<< HEAD
+            var tile_layer_cb4bd36c096e7f8d649d68cf2837886e = L.tileLayer(
+=======
+            var tile_layer_1b0ce41d0d1b03aa2d06bbe6b769f148 = L.tileLayer(
+>>>>>>> 8fbaa1b6360e2cd9991766e0607ca77afc076dd9
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                {
-  "minZoom": 0,
-  "maxZoom": 19,
-  "maxNativeZoom": 19,
-  "noWrap": false,
-  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
-  "subdomains": "abc",
-  "detectRetina": false,
-  "tms": false,
-  "opacity": 1,
-}
-
+                {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detectRetina": false, "maxNativeZoom": 19, "maxZoom": 19, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
             );
         
     
-            tile_layer_ca10e06f456dddebf78444c902fb8f9b.addTo(map_e90342f96782337d11f331bae831f7f8);
+<<<<<<< HEAD
+            tile_layer_cb4bd36c096e7f8d649d68cf2837886e.addTo(map_24f41b410c3280e1203400d9b7bd3597);
         
     
-            var rectangle_04b564a2c2f59c60eb606adfbff4703a = L.rectangle(
+            var rectangle_8961dbad7467a054db7e9eac164b52de = L.rectangle(
                 [[53.3951118, 8.1044993], [54.02765, 10.3252805]],
                 {"bubblingMouseEvents": true, "color": "cornflowerblue", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "cornflowerblue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 3}
-            ).addTo(map_e90342f96782337d11f331bae831f7f8);
+            ).addTo(map_24f41b410c3280e1203400d9b7bd3597);
         
     
-            rectangle_04b564a2c2f59c60eb606adfbff4703a.bindTooltip(
+            rectangle_8961dbad7467a054db7e9eac164b52de.bindTooltip(
+=======
+            tile_layer_1b0ce41d0d1b03aa2d06bbe6b769f148.addTo(map_d0313d5ee9b5a3bf76a8bf7de1736229);
+        
+    
+            var rectangle_1fc292ab7e7bafd7fc254346728044d9 = L.rectangle(
+                [[52.3382448, 13.088345], [52.6755087, 13.7611609]],
+                {"bubblingMouseEvents": true, "color": "cornflowerblue", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "cornflowerblue", "fillOpacity": 0.2, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 3}
+            ).addTo(map_d0313d5ee9b5a3bf76a8bf7de1736229);
+        
+    
+            rectangle_1fc292ab7e7bafd7fc254346728044d9.bindTooltip(
+>>>>>>> 8fbaa1b6360e2cd9991766e0607ca77afc076dd9
                 `<div>
-                     Hamburg, Deutschland
+                     Berlin, Deutschland
                  </div>`,
-                {
-  "sticky": true,
-}
+                {"sticky": true}
+            );
+        
+    
+            map_d0313d5ee9b5a3bf76a8bf7de1736229.fitBounds(
+                [[52.3382448, 13.088345], [52.6755087, 13.7611609]],
+                {}
             );
         
 </script>

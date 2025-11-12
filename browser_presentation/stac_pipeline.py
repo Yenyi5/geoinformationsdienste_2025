@@ -11,7 +11,8 @@ from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
 # --- Endpoints ---
-BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
+# BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
+BASE_URL_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
 BASE_URL_OSM = "https://nominatim.openstreetmap.org"
 
 # --- LLM factory ---
@@ -22,10 +23,10 @@ def make_llm(model: str, temperature: float = 0.0) -> ChatOpenAI:
       OPENAI_API_BASE
     """
     # Streamlit's sidebar will set these env vars before calling this.
-    try:
-        return ChatOpenAI(model=model, temperature=temperature, timeout = 20, max_retries=1)
-    except TypeError: 
-        return ChatOpenAI(model=model, temperature=temperature)
+    """ try:
+        return ChatOpenAI(model=model, temperature=temperature, timeout = , max_retries=1)
+    except TypeError: """ 
+    return ChatOpenAI(model=model, temperature=temperature)
 
 # --- STAC collections ---
 def get_stac_collections() -> List[dict]:
@@ -51,7 +52,7 @@ class StacSearchParams(BaseModel):
     )
     collectionid: str = Field(description="Chosen collection id")
 
-# --- LLM: extract search params from NL ---
+# --- LLM: extract search params  ---
 def extract_search_params(query: str, collections: List[dict], llm: ChatOpenAI) -> Dict[str, Any]:
     parser = PydanticOutputParser(pydantic_object=StacSearchParams)
     prompt = PromptTemplate(
