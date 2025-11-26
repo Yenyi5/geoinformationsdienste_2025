@@ -3,6 +3,14 @@
 <head>
     
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -17,7 +25,7 @@
             <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             <style>
-                #map_f9c3289d3bcd2a8de79c58408adc488d {
+                #map_d0313d5ee9b5a3bf76a8bf7de1736229 {
                     position: relative;
                     width: 100.0%;
                     height: 100.0%;
@@ -26,51 +34,25 @@
                 }
                 .leaflet-container { font-size: 1rem; }
             </style>
-
-            <style>html, body {
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            </style>
-
-            <style>#map {
-                position:absolute;
-                top:0;
-                bottom:0;
-                right:0;
-                left:0;
-                }
-            </style>
-
-            <script>
-                L_NO_TOUCH = false;
-                L_DISABLE_3D = false;
-            </script>
-
         
 </head>
 <body>
     
     
-            <div class="folium-map" id="map_f9c3289d3bcd2a8de79c58408adc488d" ></div>
+            <div class="folium-map" id="map_d0313d5ee9b5a3bf76a8bf7de1736229" ></div>
         
 </body>
 <script>
     
     
-            var map_f9c3289d3bcd2a8de79c58408adc488d = L.map(
-                "map_f9c3289d3bcd2a8de79c58408adc488d",
+            var map_d0313d5ee9b5a3bf76a8bf7de1736229 = L.map(
+                "map_d0313d5ee9b5a3bf76a8bf7de1736229",
                 {
                     center: [52.50687675, 13.42475295],
                     crs: L.CRS.EPSG3857,
-                    ...{
-  "zoom": 10,
-  "zoomControl": true,
-  "preferCanvas": false,
-}
-
+                    zoom: 10,
+                    zoomControl: true,
+                    preferCanvas: false,
                 }
             );
 
@@ -78,7 +60,7 @@
 
         
     
-            var tile_layer_bb0a06b930bff757e74c143cf270b53d = L.tileLayer(
+            var tile_layer_1b0ce41d0d1b03aa2d06bbe6b769f148 = L.tileLayer(
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                 {
   "minZoom": 0,
@@ -95,7 +77,7 @@
             );
         
     
-            tile_layer_bb0a06b930bff757e74c143cf270b53d.addTo(map_f9c3289d3bcd2a8de79c58408adc488d);
+            tile_layer_1b0ce41d0d1b03aa2d06bbe6b769f148.addTo(map_d0313d5ee9b5a3bf76a8bf7de1736229);
         
     
             var rectangle_86223fa71382271b115c1e6eb64c930a = L.rectangle(
@@ -104,13 +86,17 @@
             ).addTo(map_f9c3289d3bcd2a8de79c58408adc488d);
         
     
-            rectangle_86223fa71382271b115c1e6eb64c930a.bindTooltip(
+            rectangle_1fc292ab7e7bafd7fc254346728044d9.bindTooltip(
                 `<div>
                      Berlin, Deutschland
                  </div>`,
-                {
-  "sticky": true,
-}
+                {"sticky": true}
+            );
+        
+    
+            map_d0313d5ee9b5a3bf76a8bf7de1736229.fitBounds(
+                [[52.3382448, 13.088345], [52.6755087, 13.7611609]],
+                {}
             );
         
     
