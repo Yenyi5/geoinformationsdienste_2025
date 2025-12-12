@@ -77,7 +77,7 @@ class LocationState(TypedDict):
     items : Optional[Any]
 
     # item info to evaluate
-    items_eval: Optional[Any]
+    items_eval: Optional[Any] 
 
     # output message, after the validation of the geojson
     query: str
@@ -279,7 +279,14 @@ def get_evaluation_info(state: LocationState):
     for item in items:
         # Extract id and geometry
         item_id = item["id"]
-        date = datetime.fromisoformat(item['properties']['datetime']).strftime("%Y-%m-%d %H:%M")
+        #date = datetime.fromisoformat(item['properties']['datetime']).strftime("%Y-%m-%d %H:%M")
+        #correction to make usable for various python versions 
+        dt_str = item["properties"]["datetime"]
+        if dt_str.endswith("Z"):
+            dt_str = dt_str.replace("Z", "+00:00")
+
+        date = datetime.fromisoformat(dt_str).strftime("%Y-%m-%d %H:%M")
+
         geometry = item["geometry"]
         overlap_percentage = calculate_overlap(bbox, geometry)
         links = item["links"]
