@@ -442,7 +442,7 @@ result = compiled_graph.invoke({
     "scene_ids": None,
     "items": None,
     "items_eval": None,
-    "query": "Find Sentinel-2 MAJA data over Berlin in 2024",
+    "query": "Finde Sentinel-2 Daten für Lüttich in 2024",
     "catalogcollections": get_stac_collections(),
     "collectionid": None,
     "resultsmap": None
@@ -450,3 +450,4 @@ result = compiled_graph.invoke({
 })
 
 print("Total execution time:", datetime.now() - start_all)
+
