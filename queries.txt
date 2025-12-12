@@ -56,3 +56,18 @@ This item would be recommended for use in analyses requiring the most current LS
     - recommendation: "I recommend using the 'lstd-mean' asset from the item 'TL-L3-LST-AVHRR_NOAA-201807_monthly-fv0201', as it provides the mean LST value for the month of July 2018."
 
 
+"Finde Sentinel-2 Daten für Lüttich in 2024."
+    - model used: "gpt-4o-mini" 
+    - BASE_URL_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
+    - collection chosen: ['sentinel-2-l2a']
+    - location name: ['Lüttich'] -> andere Sprache funktioniert
+    - temporal extent: '2024-01-01/2024-12-31'
+    - recommendation: "Given the criteria of low cloud cover and the need for clear imagery, I recommend using the following item:
+
+                        - **ID**: `S2A_MSIL2A_20240923T103751`
+                        - **Date**: **September 23, 2024**
+                        - **Cloud Cover**: **0.12%**
+                        - **URL**: [View Item](https://planetarycomputer.microsoft.com/api/stac/v1/collections/sentinel-2-l2a/items/S2A_MSIL2A_20240923T103751_R008_T31UFS_20240923T152547)
+
+                        This item has the lowest cloud cover percentage, ensuring the best possible visibility for analysis."
+

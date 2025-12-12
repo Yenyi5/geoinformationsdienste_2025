@@ -42,10 +42,9 @@ os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 
 # API URLs
-#BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
-BASE_URL_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
+BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
+#BASE_URL_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
 BASE_URL_OSM = "https://nominatim.openstreetmap.org"
-
 
 
 class LocationState(TypedDict):
@@ -308,7 +307,7 @@ def get_evaluation_info(state: LocationState):
     
     # sort by overlap percentage
     items_eval = sorted(items_eval, key=lambda x: x["overlap_percentage"]["value"], reverse=True)
-    #print_dict(items_eval)
+    print_dict(items_eval)
 
     return {"items_eval": items_eval }
                                 
@@ -442,7 +441,7 @@ result = compiled_graph.invoke({
     "scene_ids": None,
     "items": None,
     "items_eval": None,
-    "query": "Finde Sentinel-2 Daten für Lüttich in 2024",
+    "query": "Finde Sentinel-2 Daten für Berlin in 2024",
     "catalogcollections": get_stac_collections(),
     "collectionid": None,
     "resultsmap": None
