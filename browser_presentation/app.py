@@ -75,13 +75,11 @@ if "current_state" not in st.session_state:
     st.session_state.last_summary = None
 
 
-
 # initialize LLM using settings from sidebar 
 llm = make_llm(model=model_name, temperature=temperature)
 
 # Chat input box 
-query = st.chat_input("Ask for data (e.g., 'Find LST data for the summer 2018 for the two largest cities in Germany.')")
-
+query = st.chat_input("Ask for data (e.g., 'Find LST data for the summer 2018 for Berlin.')")
  
 # if user submitts query, handle it 
 if query:
