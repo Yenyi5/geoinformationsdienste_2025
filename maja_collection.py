@@ -21,16 +21,20 @@ load_dotenv()
 #!pip install -qU langsmith
 
 #Define API key, endpoint, llm
-# academic cloud
-API_Key = os.getenv("ACADEMIC_API_KEY")
-API_Endpoint = os.getenv("ACADEMIC_API_ENDPOINT")
-#Model =  "deepseek-r1" 
-Model =  "llama-3.3-70b-instruct"
 
-# openAI:
-API_Key = os.getenv("OPENAI_API_KEY")
-API_Endpoint = os.getenv("OPENAI_API_ENDPOINT")
-Model = "gpt-4o-mini"
+# Determine which AI provider to use
+ai_provider = os.getenv("AI", "academic")
+
+if ai_provider == "academic":
+    API_Key = os.getenv("ACADEMIC_API_KEY")
+    API_Endpoint = os.getenv("ACADEMIC_API_ENDPOINT")
+    Model = os.getenv("ACADEMIC_MODEL")
+elif ai_provider == "openai":
+    API_Key = os.getenv("OPENAI_API_KEY")
+    API_Endpoint = os.getenv("OPENAI_API_ENDPOINT")
+    Model = os.getenv("OPENAI_MODEL")
+else:
+    raise ValueError(f"Unknown AI provider: {ai_provider}")
 
 os.environ["OPENAI_API_KEY"] = API_Key
 os.environ["OPENAI_API_BASE"] = API_Endpoint
