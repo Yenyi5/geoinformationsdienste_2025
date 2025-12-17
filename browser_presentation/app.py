@@ -3,7 +3,9 @@ import streamlit as st
 from streamlit_folium import st_folium
 import time
 
- 
+from dotenv import load_dotenv
+load_dotenv("../.env")
+
 
 # import functions from stac_pipepine.py
 from stac_pipeline import (
@@ -26,16 +28,33 @@ st.title("STAC Geosearch Chat")
 #sidebar UI for configuring LLM connection
 with st.sidebar:
     st.subheader("LLM Settings")
-    api_base = st.text_input("API Base", value=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"))
-    api_key = st.text_input("API Key", type="password", value=os.getenv("OPENAI_API_KEY", "")) 
-   # model_name = st.text_input("Model", value=os.getenv("OPENAI_MODEL", "llama-3.3-70b-instruct"))
-    model_name = st.text_input("Model", value=os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
-    temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.1) # controls deterministic vs. random
+
+    # Dropdown menu to select AI provider
+    ai_provider = st.selectbox("Select AI Provider", ["Academic Cloud", "OpenAI"])
+
+    # Dynamically populate fields based on the selected provider
+    if ai_provider == "Academic Cloud":
+        api_base = st.text_input("API Base", value=os.getenv("ACADEMIC_API_ENDPOINT", "https://chat-ai.academiccloud.de/v1"))
+        api_key = st.text_input("API Key", type="password", value=os.getenv("ACADEMIC_API_KEY", ""))
+        model_name = st.text_input("Model", value=os.getenv("ACADEMIC_MODEL", "llama-3.3-70b-instruct"))
+    elif ai_provider == "OpenAI":
+        api_base = st.text_input("API Base", value=os.getenv("OPENAI_API_ENDPOINT", "https://api.openai.com/v1"))
+        api_key = st.text_input("API Key", type="password", value=os.getenv("OPENAI_API_KEY", ""))
+        model_name = st.text_input("Model", value=os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
+
+    # Temperature slider
+    temperature = st.slider(
+        "Temperature",
+        0.0,
+        2.0,
+        0.0,
+        0.1,
+        help="For more logical, reproducible results, a low temperature is recommended."
+    )
 
     st.caption("Tip: set these in your environment so you don't need to paste them every time.")
 
- 
-
+# Set environment variables based on the selected provider
 os.environ["OPENAI_API_BASE"] = api_base
 os.environ["OPENAI_API_KEY"] = api_key
 
