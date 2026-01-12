@@ -16,7 +16,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
 from dotenv import load_dotenv
-load_dotenv()
+
 
 #!pip install -qU langsmith
 
@@ -27,19 +27,26 @@ API_Endpoint = os.getenv("ACADEMIC_API_ENDPOINT")
 #Model =  "deepseek-r1" 
 Model =  "llama-3.3-70b-instruct"
 
-# openAI:
-API_Key = os.getenv("OPENAI_API_KEY")
-API_Endpoint = os.getenv("OPENAI_API_ENDPOINT")
-Model = "gpt-4o-mini"
+# initialisation llm
+llm = None  # will be initialized by init_llm()
 
-os.environ["OPENAI_API_KEY"] = API_Key
-os.environ["OPENAI_API_BASE"] = API_Endpoint
+def init_llm(model: str, temperature: float, api_key: str, api_base: str):
+    global llm
+    load_dotenv()  
+    os.environ["OPENAI_API_KEY"] = api_key
+    os.environ["OPENAI_API_BASE"] = api_base
+    llm = BaseChatOpenAI(model=model, temperature=temperature)
+    return llm
 
-# langsmith
+
+# enables LangSmith tracing only if LANGCHAIN_API_KEY is set
 LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+
+if LANGCHAIN_API_KEY:  # only if not None / not empty
+    os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+
 
 # API URLs
 BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
@@ -91,9 +98,6 @@ class LocationState(TypedDict):
     # map object of bbox
     resultsmap: Optional[Any]
 
-
-# model
-llm = BaseChatOpenAI(model=Model, temperature=0)
 
 # get stac collections
 def get_stac_collections():
@@ -202,8 +206,8 @@ def show_on_map(state:LocationState):
         ],
         color='cornflowerblue',
         tooltip=state["bbox_name"],
-        fill=True,
-        fill_opacity=0.2
+        fill=False,
+        #fill_opacity=0.2
     ).add_to(m)
 
     # add area polygon
@@ -213,7 +217,7 @@ def show_on_map(state:LocationState):
         tooltip=state["bbox_name"],
         fill=True,
         fill_opacity=0.2
-    )
+    ).add_to(m)
 
     # zoom map to rectangle
     m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
@@ -401,59 +405,77 @@ def show_results_on_map(state:LocationState):
     #display(m)
     return {"resultsmap":m}
 
-# Create the graph
-graph = StateGraph(LocationState)
+# Create the graph (wrapped in function so that it is import-safe)
+def build_compiled_graph():
+    graph = StateGraph(LocationState)
 
-# Add nodes
-graph.add_node("extract_search", generate_searchparams)
-graph.add_node("get_geom", getgeometry)
-graph.add_node("show_map", show_on_map)
-graph.add_node("search_stac", search_stac)
-graph.add_node("create_evaluation_dict", get_evaluation_info)
-graph.add_node("summarise_results", summarise_result)
-graph.add_node("show_results_map", show_results_on_map)
+    # Add nodes
+    graph.add_node("extract_search", generate_searchparams)
+    graph.add_node("get_geom", getgeometry)
+    graph.add_node("show_map", show_on_map)
+    graph.add_node("search_stac", search_stac)
+    graph.add_node("create_evaluation_dict", get_evaluation_info)
+    graph.add_node("summarise_results", summarise_result)
+    graph.add_node("show_results_map", show_results_on_map)
 
-# Add Edges
-graph.add_edge(START, "extract_search")
-graph.add_edge("extract_search", "get_geom")
-graph.add_edge("get_geom", "show_map")
-graph.add_edge("show_map", "search_stac")
-graph.add_edge("search_stac", "create_evaluation_dict")
-graph.add_edge("create_evaluation_dict", "summarise_results")
-graph.add_edge("summarise_results", "show_results_map")
-graph.add_edge("show_results_map", END)
+    # Add Edges
+    graph.add_edge(START, "extract_search")
+    graph.add_edge("extract_search", "get_geom")
+    graph.add_edge("get_geom", "show_map")
+    graph.add_edge("show_map", "search_stac")
+    graph.add_edge("search_stac", "create_evaluation_dict")
+    graph.add_edge("create_evaluation_dict", "summarise_results")
+    graph.add_edge("summarise_results", "show_results_map")
+    graph.add_edge("show_results_map", END)
 
-# Compile the graph
-compiled_graph = graph.compile()
+    return graph.compile()
+
+# Compile the graph (wrapped in function so that it is import-safe)
+def run_query(query: str):
+    if llm is None:
+        raise RuntimeError("LLM not initialized. Call init_llm(...) before run_query(...).")
+
+    compiled_graph = build_compiled_graph()
+
+    start_all = datetime.now()
+
+    result = compiled_graph.invoke({
+        "location": None,
+        "location_polygon": None,
+        "bbox": None,
+        "bbox_name": None,
+        "datetime_range": None,
+        "bboxmap": None,
+        "messages": [],
+        "scene_ids": None,
+        "items": None,
+        "items_eval": None,
+        "query": query,
+        "catalogcollections": get_stac_collections(),
+        "collectionid": None,
+        "resultsmap": None,
+    })
+
+    print("Total execution time:", datetime.now() - start_all)
+    return result
 
 # draw architecture graph
-try:
-    with open("graph_output.png", "wb") as f:
-        f.write(compiled_graph.get_graph().draw_mermaid_png())
-    print("Graph displayed successfully.")
-except Exception as e:
-    print(f"Fehler beim Speichern des Graphen: {e}")
+if __name__ == "__main__":
+    init_llm(
+        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        temperature=0.0,
+        api_key=os.getenv("OPENAI_API_KEY", ""),
+        api_base=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+    )
 
-# Initiate
-start_all = datetime.now()
+    compiled_graph = build_compiled_graph()
 
-print("\nProcessing the user input...")
-result = compiled_graph.invoke({
-    "location": None,
-    "location_polygon" : None,
-    "bbox": None,
-    "datetime_range": None,
-    "bboxmap": None,
-    "messages": [],
-    "scene_ids": None,
-    "items": None,
-    "items_eval": None,
-    "query": "Finde Sentinel-2 Daten für Berlin in 2024",
-    "catalogcollections": get_stac_collections(),
-    "collectionid": None,
-    "resultsmap": None
+    try:
+        with open("graph_output.png", "wb") as f:
+            f.write(compiled_graph.get_graph().draw_mermaid_png())
+        print("Graph saved to graph_output.png.")
+    except Exception as e:
+        print(f"Fehler beim Speichern des Graphen: {e}")
 
-})
-
-print("Total execution time:", datetime.now() - start_all)
+    run_query("Finde Sentinel-2 Daten für Berlin in 2024")
 
