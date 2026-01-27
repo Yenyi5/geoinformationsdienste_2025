@@ -5,15 +5,44 @@ import streamlit.components.v1 as components
 
 from maja_collection import init_llm, run_query
 
+from dotenv import load_dotenv
+load_dotenv()
+
 st.set_page_config(page_title="STAC Geosearch Chat", page_icon="🗺️", layout="wide")
 st.title("STAC Geosearch Chat")
 
 with st.sidebar:
+    st.subheader("STAC Catalogue")
+
+    catalog_url = st.selectbox("Select STAC Catalogue to search", 
+                           ["https://geoservice.dlr.de/eoc/ogc/stac/v1", "https://planetarycomputer.microsoft.com/api/stac/v1"],
+                           help="So far, the application was only tested for the two catalogues.")
+
     st.subheader("LLM Settings")
-    api_base = st.text_input("API Base", value=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"))
-    api_key = st.text_input("API Key", type="password", value=os.getenv("OPENAI_API_KEY", ""))
-    model_name = st.text_input("Model", value=os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
-    temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.1)
+
+    # Dropdown menu to select AI provider
+    ai_provider = st.selectbox("Select AI Provider", ["Academic Cloud", "OpenAI"])
+
+    # Dynamically populate fields based on the selected provider
+    if ai_provider == "Academic Cloud":
+        api_base = st.text_input("API Base", value=os.getenv("ACADEMIC_API_ENDPOINT", "https://chat-ai.academiccloud.de/v1"))
+        api_key = st.text_input("API Key", type="password", value=os.getenv("ACADEMIC_API_KEY", ""))
+        model_name = st.text_input("Model", value=os.getenv("ACADEMIC_MODEL", "llama-3.3-70b-instruct"))
+    elif ai_provider == "OpenAI":
+        api_base = st.text_input("API Base", value=os.getenv("OPENAI_API_ENDPOINT", "https://api.openai.com/v1"))
+        api_key = st.text_input("API Key", type="password", value=os.getenv("OPENAI_API_KEY", ""))
+        model_name = st.text_input("Model", value=os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
+
+    # Temperature slider
+    temperature = st.slider(
+        "Temperature",
+        0.0,
+        1.0,
+        0.0,
+        0.1,
+        help="For more logical, reproducible results, a low temperature is recommended."
+    )
+
     st.caption("Tip: set these in your environment so you don't need to paste them every time.")
 
 # Session state
@@ -34,10 +63,11 @@ if query:
         st.markdown(query)
 
     # Initialize backend LLM (must be called before run_query)
-    init_llm(model_name, temperature, api_key=api_key, api_base=api_base)
+    init_llm(Model= model_name, temperature= temperature, API_Key= api_key, API_Endpoint= api_base)
+    #init_llm(model_name, temperature, api_key, api_base)
 
     with st.spinner("Running backend pipeline…"):
-        result = run_query(query)
+        result = run_query(query, catalog_url)
 
     st.session_state.last_query = query
     st.session_state.last_result = result

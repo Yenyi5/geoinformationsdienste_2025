@@ -8,7 +8,7 @@ import random
 from shapely.geometry import box, shape
 
 from typing import TypedDict, List, Dict, Any, Optional
-from langchain.output_parsers import PydanticOutputParser
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
@@ -21,21 +21,30 @@ from dotenv import load_dotenv
 #!pip install -qU langsmith
 
 #Define API key, endpoint, llm
-# academic cloud
-API_Key = os.getenv("ACADEMIC_API_KEY")
-API_Endpoint = os.getenv("ACADEMIC_API_ENDPOINT")
-#Model =  "deepseek-r1" 
-Model =  "llama-3.3-70b-instruct"
+
+# Determine which AI provider to use
+ai_provider = os.getenv("AI", "academic")
+
+if ai_provider == "academic":
+    API_Key = os.getenv("ACADEMIC_API_KEY")
+    API_Endpoint = os.getenv("ACADEMIC_API_ENDPOINT")
+    Model = os.getenv("ACADEMIC_MODEL")
+elif ai_provider == "openai":
+    API_Key = os.getenv("OPENAI_API_KEY")
+    API_Endpoint = os.getenv("OPENAI_API_ENDPOINT")
+    Model = os.getenv("OPENAI_MODEL")
+else:
+    raise ValueError(f"Unknown AI provider: {ai_provider}")
 
 # initialisation llm
 llm = None  # will be initialized by init_llm()
 
-def init_llm(model: str, temperature: float, api_key: str, api_base: str):
+def init_llm(Model: str, temperature: float, API_Key: str, API_Endpoint: str):
     global llm
     load_dotenv()  
-    os.environ["OPENAI_API_KEY"] = api_key
-    os.environ["OPENAI_API_BASE"] = api_base
-    llm = BaseChatOpenAI(model=model, temperature=temperature)
+    os.environ["OPENAI_API_KEY"] = API_Key
+    os.environ["OPENAI_API_BASE"] = API_Endpoint
+    llm = ChatOpenAI(model=Model, temperature=temperature, api_key=API_Key, base_url=API_Endpoint)
     return llm
 
 
@@ -49,8 +58,12 @@ if LANGCHAIN_API_KEY:  # only if not None / not empty
 
 
 # API URLs
-BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
-#BASE_URL_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
+BASE_URL_STAC = os.getenv("BASE_URL_STAC")
+
+if not BASE_URL_STAC:
+    BASE_URL_STAC = "https://geoservice.dlr.de/eoc/ogc/stac/v1"
+    #BASE_URL_STAC = "https://planetarycomputer.microsoft.com/api/stac/v1"
+
 BASE_URL_OSM = "https://nominatim.openstreetmap.org"
 
 
@@ -89,6 +102,9 @@ class LocationState(TypedDict):
     # output message, after the validation of the geojson
     query: str
 
+    # Catalog to search
+    catalog_url: str
+
     # Collections in catalog
     catalogcollections: List[dict]
 
@@ -100,8 +116,8 @@ class LocationState(TypedDict):
 
 
 # get stac collections
-def get_stac_collections():
-    response = requests.get(f"{BASE_URL_STAC}/collections")
+def get_stac_collections(catalog_url):
+    response = requests.get(f"{catalog_url}/collections")
     response.raise_for_status()
     collections = response.json()["collections"]
     filtered = []
@@ -235,8 +251,9 @@ def print_dict(items):
 #Access our STAC data collection
 def search_stac(state: LocationState):
     start = datetime.now()
-    
-    url = f"{BASE_URL_STAC}/search" #STAC search endpoint 
+
+    catalog_url = state["catalog_url"]
+    url = f"{catalog_url}/search" #STAC search endpoint 
     payload = {
         "collections": state["collectionid"]#,
         #"limit": 20
@@ -431,7 +448,7 @@ def build_compiled_graph():
     return graph.compile()
 
 # Compile the graph (wrapped in function so that it is import-safe)
-def run_query(query: str):
+def run_query(query: str, catalog_url: str):
     if llm is None:
         raise RuntimeError("LLM not initialized. Call init_llm(...) before run_query(...).")
 
@@ -451,7 +468,8 @@ def run_query(query: str):
         "items": None,
         "items_eval": None,
         "query": query,
-        "catalogcollections": get_stac_collections(),
+        "catalog_url": catalog_url,
+        "catalogcollections": get_stac_collections(catalog_url),
         "collectionid": None,
         "resultsmap": None,
     })
@@ -462,10 +480,10 @@ def run_query(query: str):
 # draw architecture graph
 if __name__ == "__main__":
     init_llm(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        Model=Model,
         temperature=0.0,
-        api_key=os.getenv("OPENAI_API_KEY", ""),
-        api_base=os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1"),
+        API_Key=API_Key,
+        API_Endpoint=API_Endpoint
     )
 
     compiled_graph = build_compiled_graph()
@@ -477,5 +495,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Fehler beim Speichern des Graphen: {e}")
 
-    run_query("Finde Sentinel-2 Daten für Berlin in 2024")
+    run_query("Finde Sentinel-2 Daten für Berlin in 2024", BASE_URL_STAC)
 
