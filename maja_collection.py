@@ -6,6 +6,8 @@ import os
 from datetime import datetime
 import random
 from shapely.geometry import box, shape
+import pandas as pd
+from urllib.parse import urlparse
 
 from typing import TypedDict, List, Dict, Any, Optional
 from langchain_core.output_parsers import PydanticOutputParser
@@ -16,7 +18,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
 from dotenv import load_dotenv
-
+load_dotenv()
 
 #!pip install -qU langsmith
 
@@ -44,7 +46,7 @@ def init_llm(Model: str, temperature: float, API_Key: str, API_Endpoint: str):
     load_dotenv()  
     os.environ["OPENAI_API_KEY"] = API_Key
     os.environ["OPENAI_API_BASE"] = API_Endpoint
-    llm = ChatOpenAI(model=Model, temperature=temperature, api_key=API_Key, base_url=API_Endpoint)
+    llm = BaseChatOpenAI(model=Model, temperature=temperature, api_key=API_Key, base_url=API_Endpoint)
     return llm
 
 
@@ -113,6 +115,9 @@ class LocationState(TypedDict):
 
     # map object of bbox
     resultsmap: Optional[Any]
+
+    # list of similar collections based on similarity matrix
+    similar_collections: Optional[dict]
 
 
 # get stac collections
@@ -422,6 +427,22 @@ def show_results_on_map(state:LocationState):
     #display(m)
     return {"resultsmap":m}
 
+def recommend_similar_collections(state:LocationState, k=5):
+    catalog_url = state["catalog_url"]
+    collectionid = state["collectionid"][0]
+    catalog_name = urlparse(catalog_url).netloc
+    similarity_matrix = pd.read_csv(os.path.join("similarity", f"{catalog_name}.csv"), index_col=0)
+    similar_collections = {
+        col_id: f"{catalog_url}/collections/{col_id}"
+        for col_id in similarity_matrix.loc[collectionid].sort_values(ascending=False).index[1:k+1]
+    }
+    print("Similar collections:")
+    for sc, url in similar_collections.items():
+        print(f"{sc}: {url}")
+
+    return {"similar_collections": similar_collections}
+    # do something with -> replace collection id in state and run query again?
+
 # Create the graph (wrapped in function so that it is import-safe)
 def build_compiled_graph():
     graph = StateGraph(LocationState)
@@ -434,6 +455,7 @@ def build_compiled_graph():
     graph.add_node("create_evaluation_dict", get_evaluation_info)
     graph.add_node("summarise_results", summarise_result)
     graph.add_node("show_results_map", show_results_on_map)
+    graph.add_node("recommend_similar_collections", recommend_similar_collections)
 
     # Add Edges
     graph.add_edge(START, "extract_search")
@@ -443,7 +465,8 @@ def build_compiled_graph():
     graph.add_edge("search_stac", "create_evaluation_dict")
     graph.add_edge("create_evaluation_dict", "summarise_results")
     graph.add_edge("summarise_results", "show_results_map")
-    graph.add_edge("show_results_map", END)
+    graph.add_edge("show_results_map", "recommend_similar_collections")
+    graph.add_edge("recommend_similar_collections", END)
 
     return graph.compile()
 
@@ -472,10 +495,13 @@ def run_query(query: str, catalog_url: str):
         "catalogcollections": get_stac_collections(catalog_url),
         "collectionid": None,
         "resultsmap": None,
+        "similar_collections": None
     })
 
-    print("Total execution time:", datetime.now() - start_all)
-    return result
+    total_time = datetime.now() - start_all
+
+    print("Total execution time:", total_time)
+    return result, total_time
 
 # draw architecture graph
 if __name__ == "__main__":
@@ -495,5 +521,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Fehler beim Speichern des Graphen: {e}")
 
-    run_query("Finde Sentinel-2 Daten für Berlin in 2024", BASE_URL_STAC)
+    result, total_time = run_query("Finde Sentinel-2 Daten für Berlin in 2024", BASE_URL_STAC)
 

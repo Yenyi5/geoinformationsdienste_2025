@@ -16,7 +16,7 @@ with st.sidebar:
 
     catalog_url = st.selectbox("Select STAC Catalogue to search", 
                            ["https://geoservice.dlr.de/eoc/ogc/stac/v1", "https://planetarycomputer.microsoft.com/api/stac/v1"],
-                           help="So far, the application was only tested for the two catalogues.")
+                           help="So far, the application is only implemented for the two catalogues.")
 
     st.subheader("LLM Settings")
 
@@ -54,6 +54,8 @@ if "map_html" not in st.session_state:
     st.session_state.map_html = None
 if "map_sig" not in st.session_state:
     st.session_state.map_sig = None
+if "last_totaltime" not in st.session_state:
+    st.session_state.last_totaltime = None
 
 # Chat input
 query = st.chat_input("Ask for data (e.g., 'Find Sentinel-2 data for Berlin in 2024')")
@@ -67,10 +69,11 @@ if query:
     #init_llm(model_name, temperature, api_key, api_base)
 
     with st.spinner("Running backend pipeline…"):
-        result = run_query(query, catalog_url)
+        result, total_time = run_query(query, catalog_url)
 
     st.session_state.last_query = query
     st.session_state.last_result = result
+    st.session_state.last_totaltime = total_time
 
 # Render results
 result = st.session_state.last_result
@@ -136,3 +139,12 @@ if result:
     if summary:
         st.subheader("Recommendation")
         st.write(summary)
+
+    # Recommendation of similar collections
+    similar_collections = result.get("similar_collections")
+    if similar_collections:
+        st.subheader("Similar collections:")
+        for i, (col_id, col_url) in enumerate(similar_collections.items()):
+            st.markdown(f"{i+1}. [{col_id}]({col_url})", unsafe_allow_html=True)
+
+    st.markdown(f"<span style='color: grey; font-style: italic;'>Total execution time: {st.session_state.last_totaltime}</span>", unsafe_allow_html=True)
