@@ -3,7 +3,7 @@ import os
 import streamlit as st
 import streamlit.components.v1 as components
 
-from maja_collection import init_llm, run_query
+from backend_pipeline import init_llm, run_query
 
 from dotenv import load_dotenv
 load_dotenv()
