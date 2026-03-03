@@ -9,9 +9,10 @@ STAC Geosearch Chat is an interactive application that allows users to query Spa
 1. **Python Environment**:
    - Python 3.8 or higher.
    - Install dependencies using `pip install -r requirements.txt`.
-2. **Environment Variables**:
-   - Create a `.env` file based on the `.env.template` provided.
-   - Add your API keys and endpoints for the LLM and STAC catalogs.
+2. **API keys**:
+   - LLM API key (OpenAI compatible provider): [OpenAI](https://openai.com/de-DE/api/) and [AcademicCloud](https://docs.hpc.gwdg.de/services/saia/index.html#api-request) implemented
+   - [LangSmith](https://www.langchain.com/) API key for tracing & debugging LangChain workflows
+   - Optionally: Add your API keys and endpoints for the LLM and STAC catalogs to a .env file.
 
 
 ## Starting the App
