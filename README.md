@@ -1,4 +1,4 @@
-# 🗺️ STAC Geosearch Chat
+# STAC Geosearch Chat
 
 STAC Geosearch Chat is an interactive application that allows users to query SpatioTemporal Asset Catalogs (STAC) for geospatial data using natural language. The app integrates a Large Language Model (LLM) to process user queries and provides corresponding results on a map. It also summarizes and evaluates the results in natural language and provides a list of similar collections.
 
@@ -16,10 +16,12 @@ STAC Geosearch Chat is an interactive application that allows users to query Spa
 
 ## Starting the App
 1. If you want, you can configure a `.env` file with the required API keys.
-2. Run the app using Streamlit:
+   ```bash
+   cp .env.template .env
+3. Run the app using Streamlit:
    ```bash
    streamlit run app.py
-3. Open the app in your browser (default: http://localhost:8501).
+4. Open the app in your browser (default: http://localhost:8501).
 
 
 ## Using the App
@@ -35,4 +37,5 @@ STAC Geosearch Chat is an interactive application that allows users to query Spa
 ## Adding New Catalogs
 1. Run the collection_similarity.ipynb notebook to calculate similarity matrices for new catalogs.
 2. Add the catalog URL to the app configuration.
+
 ⚠️ Currently, the notebook cannot handle empty collections.
