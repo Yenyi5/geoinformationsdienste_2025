@@ -2,7 +2,7 @@
 
 STAC Geosearch Chat is an interactive application that allows users to query SpatioTemporal Asset Catalogs (STAC) for geospatial data using natural language. The app integrates a Large Language Model (LLM) to process user queries and provides corresponding results on a map. It also summarizes and evaluates the results in natural language and provides a list of similar collections. New catalogs to query can be integrated, but a similarity matrix must be calculated to get similar collections recommended. 
 
-[![Watch the demo](assets/demo_preview.png)] (https://datashare.tu-dresden.de/s/J6xcmMD9PxwwGSb)
+![Watch the demo](demo_preview.png) Demo Video: https://datashare.tu-dresden.de/s/J6xcmMD9PxwwGSb
 
 
 ## Prerequisites
