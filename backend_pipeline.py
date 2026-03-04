@@ -431,16 +431,18 @@ def recommend_similar_collections(state:LocationState, k=5):
     catalog_url = state["catalog_url"]
     collectionid = state["collectionid"][0]
     catalog_name = urlparse(catalog_url).netloc
-    similarity_matrix = pd.read_csv(os.path.join("similarity", f"{catalog_name}.csv"), index_col=0)
-    similar_collections = {
-        col_id: f"{catalog_url}/collections/{col_id}"
-        for col_id in similarity_matrix.loc[collectionid].sort_values(ascending=False).index[1:k+1]
-    }
-    print("Similar collections:")
-    for sc, url in similar_collections.items():
-        print(f"{sc}: {url}")
+    similarity_matrix_path = os.path.join("similarity", f"{catalog_name}.csv")
+    if os.path.exists(similarity_matrix_path):
+        similarity_matrix = pd.read_csv(similarity_matrix_path, index_col=0)
+        similar_collections = {
+            col_id: f"{catalog_url}/collections/{col_id}"
+            for col_id in similarity_matrix.loc[collectionid].sort_values(ascending=False).index[1:k+1]
+        }
+        print("Similar collections:")
+        for sc, url in similar_collections.items():
+            print(f"{sc}: {url}")
 
-    return {"similar_collections": similar_collections}
+        return {"similar_collections": similar_collections}
     # do something with -> replace collection id in state and run query again?
 
 # Create the graph (wrapped in function so that it is import-safe)
