@@ -1,6 +1,6 @@
 # STAC Geosearch Chat
 
-STAC Geosearch Chat is an interactive application that allows users to query SpatioTemporal Asset Catalogs (STAC) for geospatial data using natural language. The app integrates a Large Language Model (LLM) to process user queries and provides corresponding results on a map. It also summarizes and evaluates the results in natural language and provides a list of similar collections. New catalogs to query can be integrated, but a similarity matrix must be added. 
+STAC Geosearch Chat is an interactive application that allows users to query SpatioTemporal Asset Catalogs (STAC) for geospatial data using natural language. The app integrates a Large Language Model (LLM) to process user queries and provides corresponding results on a map. It also summarizes and evaluates the results in natural language and provides a list of similar collections. New catalogs to query can be integrated, but a similarity matrix must be calculated to get similar collections recommended. 
 
 [demo video]
 
@@ -36,7 +36,7 @@ STAC Geosearch Chat is an interactive application that allows users to query Spa
     - Example: "Find Sentinel-2 data for Berlin in 2024."
 
 ## Adding New Catalogs
-1. Run the collection_similarity.ipynb notebook to calculate similarity matrices for new catalog or add an empty csv with the catalog name to the corresponding folder.
+1. Run the collection_similarity.ipynb notebook to calculate similarity matrices for new catalog.
 2. Add the catalog URL to the app configuration.
 
 ⚠️ Currently, the notebook cannot handle empty collections.
